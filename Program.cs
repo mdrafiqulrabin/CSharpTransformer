@@ -1,4 +1,5 @@
 ﻿using System;
+using CSharpTransformer.src;
 
 namespace CSharpTransformer
 {
@@ -6,7 +7,7 @@ namespace CSharpTransformer
     {
         public static void Main(string[] args)
         {
-            Console.WriteLine("Hello CSharpTransformer!");
+            new ASTExplorer().Call();
         }
     }
 }
