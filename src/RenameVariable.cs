@@ -5,25 +5,28 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
-namespace CSharpTransformer
+namespace CSharpTransformer.src
 {
     public class RenameVariable
     {
-        public RenameVariable() { }
+        public RenameVariable() 
+        {
+            Console.WriteLine("\n[ RenameVariable ]\n");
+        }
 
         public void InspectSourceCode()
         {
-            string path = @"/Users/mdrafiqulrabin/Projects/TNP/CSharpTransformer/CSharpTransformer/data/originalCode";
+            var rootDir = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName;
+            var path = Path.Combine(rootDir, "data/original/");
             string[] files = Directory.GetFiles(path);
             foreach (string file in files)
             {
-                if (!file.Contains("sample.cs")) continue;
-                Console.WriteLine("file name = " + Path.GetFileName(file));
-                var sampleCode = File.ReadAllText(file);
+                Console.WriteLine("File = " + Path.GetFileName(file));
+                var txtCode = File.ReadAllText(file);
 
-                SyntaxTree tree = CSharpSyntaxTree.ParseText(sampleCode);
+                SyntaxTree tree = CSharpSyntaxTree.ParseText(txtCode);
                 var root = (CompilationUnitSyntax)tree.GetRoot();
-                Console.WriteLine("Original = " + root);
+                Console.WriteLine("Original = \n" + root + "\n");
 
                 LocateVariables locateVariables = new LocateVariables();
                 locateVariables.Visit(root);
@@ -39,7 +42,8 @@ namespace CSharpTransformer
                     variableId++;
                 }
 
-                Console.WriteLine("Transformed = " + root);
+                Console.WriteLine("Transformed = \n" + root + "\n");
+                Console.WriteLine("\n");
             }
         }
     }

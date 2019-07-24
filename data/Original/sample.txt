@@ -1,5 +1,5 @@
-﻿int void Add (int x, int y)
+﻿int void Dummy (int x, int y)
 {
-    int z = x + y;
-    return z;
+    int z = x * x + y * y;
+    return Math.Sqrt(z);
 }
