@@ -23,13 +23,13 @@ namespace CSharpTransformer.src
             {
                 Console.WriteLine("File = " + Path.GetFileName(file));
                 var txtCode = File.ReadAllText(file);
-
                 SyntaxTree tree = CSharpSyntaxTree.ParseText(txtCode);
                 var root = (CompilationUnitSyntax)tree.GetRoot();
                 Console.WriteLine("Original = \n" + root + "\n");
 
                 var loopExchange = new ApplyLoopExchange();
                 root = (CompilationUnitSyntax)loopExchange.Visit(root);
+                root = (CompilationUnitSyntax)Formatter.Format(root, new AdhocWorkspace());
                 Console.WriteLine("Transformed = \n" + root + "\n");
             }
         }
@@ -76,16 +76,6 @@ namespace CSharpTransformer.src
                 var retVal = SyntaxFactory.ForStatement(null, initializers, condition, incrementors, statement);
                 return retVal;
             }
-            return base.Visit(node);
-        }
-    }
-
-    public class FormatCode : CSharpSyntaxRewriter
-    {
-        public FormatCode() { }
-
-        public override SyntaxNode Visit(SyntaxNode node)
-        {
             return base.Visit(node);
         }
     }

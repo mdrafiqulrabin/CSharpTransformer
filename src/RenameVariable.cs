@@ -4,6 +4,7 @@ using System.IO;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.Formatting;
 
 namespace CSharpTransformer.src
 {
@@ -23,7 +24,6 @@ namespace CSharpTransformer.src
             {
                 Console.WriteLine("File = " + Path.GetFileName(file));
                 var txtCode = File.ReadAllText(file);
-
                 SyntaxTree tree = CSharpSyntaxTree.ParseText(txtCode);
                 var root = (CompilationUnitSyntax)tree.GetRoot();
                 Console.WriteLine("Original = \n" + root + "\n");
@@ -31,7 +31,6 @@ namespace CSharpTransformer.src
                 LocateVariables locateVariables = new LocateVariables();
                 locateVariables.Visit(root);
                 HashSet<SyntaxToken> mVariableList = locateVariables.GetVariableList();
-
                 int variableId = 0;
                 foreach (var oldVariable in mVariableList)
                 {
@@ -41,7 +40,7 @@ namespace CSharpTransformer.src
                     root = (CompilationUnitSyntax)vr.Visit(root);
                     variableId++;
                 }
-
+                root = (CompilationUnitSyntax)Formatter.Format(root, new AdhocWorkspace());
                 Console.WriteLine("Transformed = \n" + root + "\n");
                 Console.WriteLine("\n");
             }
