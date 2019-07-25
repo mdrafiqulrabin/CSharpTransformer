@@ -9,6 +9,7 @@ namespace CSharpTransformer.src
         public void Call()
         {
             new RenameVariable().InspectSourceCode();
+            new LoopExchange().InspectSourceCode();
         }
     }
 }

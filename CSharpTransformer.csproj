@@ -111,12 +111,16 @@
     <Reference Include="Microsoft.CodeAnalysis.VisualBasic.Workspaces">
       <HintPath>packages\Microsoft.CodeAnalysis.VisualBasic.Workspaces.3.1.0\lib\netstandard2.0\Microsoft.CodeAnalysis.VisualBasic.Workspaces.dll</HintPath>
     </Reference>
+    <Reference Include="SQLitePCLRaw.core">
+      <HintPath>packages\SQLitePCLRaw.core.1.1.14\lib\net45\SQLitePCLRaw.core.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="src\ASTExplorer.cs" />
     <Compile Include="src\RenameVariable.cs" />
+    <Compile Include="src\LoopExchange.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
