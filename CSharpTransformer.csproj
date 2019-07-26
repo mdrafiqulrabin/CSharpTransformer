@@ -121,6 +121,7 @@
     <Compile Include="src\ASTExplorer.cs" />
     <Compile Include="src\RenameVariable.cs" />
     <Compile Include="src\LoopExchange.cs" />
+    <Compile Include="src\SwitchConditional.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
