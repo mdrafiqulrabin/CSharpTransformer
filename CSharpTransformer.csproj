@@ -122,6 +122,7 @@
     <Compile Include="src\RenameVariable.cs" />
     <Compile Include="src\LoopExchange.cs" />
     <Compile Include="src\SwitchConditional.cs" />
+    <Compile Include="src\BooleanExchange.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

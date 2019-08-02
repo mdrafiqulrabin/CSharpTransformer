@@ -11,6 +11,7 @@ namespace CSharpTransformer.src
             new RenameVariable().InspectSourceCode();
             new LoopExchange().InspectSourceCode();
             new SwitchConditional().InspectSourceCode();
+            new BooleanExchange().InspectSourceCode();
         }
     }
 }
