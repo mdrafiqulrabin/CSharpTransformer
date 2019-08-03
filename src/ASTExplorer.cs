@@ -8,10 +8,13 @@ namespace CSharpTransformer.src
         public ASTExplorer() { }
         public void Call()
         {
+            /*
             new RenameVariable().InspectSourceCode();
             new LoopExchange().InspectSourceCode();
             new SwitchConditional().InspectSourceCode();
             new BooleanExchange().InspectSourceCode();
+            */
+            new PermuteStatement().InspectSourceCode();
         }
     }
 }

@@ -123,6 +123,7 @@
     <Compile Include="src\LoopExchange.cs" />
     <Compile Include="src\SwitchConditional.cs" />
     <Compile Include="src\BooleanExchange.cs" />
+    <Compile Include="src\PermuteStatement.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
