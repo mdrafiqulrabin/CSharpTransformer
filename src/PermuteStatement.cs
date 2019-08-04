@@ -53,6 +53,7 @@ namespace CSharpTransformer.src
                         root = root.ReplaceNodes(new[] { statements[i], statements[j] },
                             (original, _) => original == statements[i] ? statements[j] : statements[i]);
                         statements = root.DescendantNodes().OfType<StatementSyntax>().ToList();
+                        i++; j++;
                     }
                 }
             }
