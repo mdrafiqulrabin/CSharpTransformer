@@ -1,11 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Formatting;
 
 namespace CSharpTransformer.src
 {
@@ -13,26 +11,18 @@ namespace CSharpTransformer.src
     {
         public SwitchConditional()
         {
-            Console.WriteLine("\n[ SwitchConditional ]\n");
+            //Console.WriteLine("\n[ SwitchConditional ]\n");
         }
 
-        public void InspectSourceCode()
+        public void InspectSourceCode(String csFile)
         {
-            var rootDir = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName;
-            var path = Path.Combine(rootDir, "data/original/");
-            string[] files = Directory.GetFiles(path);
-            foreach (string file in files)
+            Common.SetOutputPath(this, csFile);
+            CompilationUnitSyntax root = Common.GetParseUnit(csFile);
+            if (root != null)
             {
-                Console.WriteLine("File = " + Path.GetFileName(file));
-                var txtCode = File.ReadAllText(file);
-                SyntaxTree tree = CSharpSyntaxTree.ParseText(txtCode);
-                var root = (CompilationUnitSyntax)tree.GetRoot();
-                Console.WriteLine("Original = \n" + root + "\n");
-
                 var switchConditional = new ApplySwitchConditional();
                 root = (CompilationUnitSyntax)switchConditional.Visit(root);
-                root = (CompilationUnitSyntax)Formatter.Format(root, new AdhocWorkspace());
-                Console.WriteLine("Transformed = \n" + root + "\n");
+                Common.SaveTransformation(root, csFile);
             }
         }
     }
@@ -75,7 +65,6 @@ namespace CSharpTransformer.src
                         expressionSyntaxes = expressionSyntaxes.Trim('(', ')');
                     }
                     ExpressionSyntax ifElseCondition = SyntaxFactory.ParseExpression(expressionSyntaxes);
-                    //Console.WriteLine("ifElseCondition = " + ifElseCondition);
 
                     SyntaxList <StatementSyntax> ifElseStatementSyntaxes = new SyntaxList<StatementSyntax>();
                     foreach (StatementSyntax caseStatementSyntax in switchSectionSyntax.Statements)
@@ -87,7 +76,6 @@ namespace CSharpTransformer.src
                                 if (blockStatementSyntax.Kind() != SyntaxKind.BreakStatement)
                                 {
                                     ifElseStatementSyntaxes = ifElseStatementSyntaxes.Add(blockStatementSyntax);
-                                    //Console.WriteLine("blockStatementSyntax = " + blockStatementSyntax);
                                 }
                             }
                         }
@@ -98,33 +86,32 @@ namespace CSharpTransformer.src
                         else
                         {
                             ifElseStatementSyntaxes = ifElseStatementSyntaxes.Add(caseStatementSyntax);
-                            //Console.WriteLine("statementSyntax = " + caseStatementSyntax);
                         }
                     }
                     StatementSyntax ifElseBlock = SyntaxFactory.Block(ifElseStatementSyntaxes);
-                    //Console.WriteLine("ifElseStatement = " + ifElseStatement);
 
                     if (defaultCase)
                     {
                         ElseClauseSyntax elseClauseSyntax = SyntaxFactory.ElseClause(ifElseBlock);
                         lastElseClauseSyntax = elseClauseSyntax;
-                        //Console.WriteLine("elseClauseSyntax = " + elseClauseSyntax);
                     }
                     else
                     {
                         IfStatementSyntax ifStatementSyntax = SyntaxFactory.IfStatement(ifElseCondition, ifElseBlock);
-                        //Console.WriteLine("ifStatementSyntax = " + ifStatementSyntax);
                         allIfStatementSyntax.Add(ifStatementSyntax);
                     }
-                    //Console.WriteLine("\n");
                 }
 
                 IfStatementSyntax mIfStatementSyntax = null;
-                if (allIfStatementSyntax.Count == 0 && lastElseClauseSyntax != null) //only default
+                if (allIfStatementSyntax.Count == 0) 
                 {
-                    ExpressionSyntax onlyDefaultCondition = SyntaxFactory.ParseExpression(switchStatementSyntax.Expression + "==" + switchStatementSyntax.Expression);
-                    IfStatementSyntax onlyDefaultIf = SyntaxFactory.IfStatement(onlyDefaultCondition, lastElseClauseSyntax.Statement);
-                    return onlyDefaultIf;
+                    ExpressionSyntax defaultCondition = SyntaxFactory.ParseExpression(switchStatementSyntax.Expression + "==" + switchStatementSyntax.Expression);
+                    StatementSyntax defaultStatement = SyntaxFactory.ParseStatement("{\n}"); //empty
+                    if (lastElseClauseSyntax != null) //only default
+                    {
+                        defaultStatement = lastElseClauseSyntax.Statement;
+                    }
+                    return SyntaxFactory.IfStatement(defaultCondition, defaultStatement);
                 }
                 else
                 {

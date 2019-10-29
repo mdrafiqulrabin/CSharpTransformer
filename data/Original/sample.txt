@@ -1,7 +1,0 @@
-﻿/* Modify this file - Replace with a single method */
-
-int void Dummy (int x, int y)
-{
-    int z = x * x + y * y;
-    return Math.Sqrt(z);
-}

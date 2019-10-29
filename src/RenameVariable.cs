@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Formatting;
 
 namespace CSharpTransformer.src
 {
@@ -12,53 +10,44 @@ namespace CSharpTransformer.src
     {
         public RenameVariable() 
         {
-            Console.WriteLine("\n[ RenameVariable ]\n");
+            //Console.WriteLine("\n[ RenameVariable ]\n");
         }
 
-        public void InspectSourceCode()
+        public void InspectSourceCode(String csFile)
         {
-            var rootDir = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName;
-            var path = Path.Combine(rootDir, "data/original/");
-            string[] files = Directory.GetFiles(path);
-            foreach (string file in files)
+            Common.SetOutputPath(this, csFile);
+            CompilationUnitSyntax root = Common.GetParseUnit(csFile);
+            if (root != null)
             {
-                Console.WriteLine("File = " + Path.GetFileName(file));
-                var txtCode = File.ReadAllText(file);
-                SyntaxTree tree = CSharpSyntaxTree.ParseText(txtCode);
-                var root = (CompilationUnitSyntax)tree.GetRoot();
-                Console.WriteLine("Original = \n" + root + "\n");
-
-                LocateVariables locateVariables = new LocateVariables();
+                var locateVariables = new LocateVariables();
                 locateVariables.Visit(root);
-                HashSet<SyntaxToken> mVariableList = locateVariables.GetVariableList();
+                HashSet<SyntaxToken> mVariableNodes = locateVariables.GetVariableList();
                 int variableId = 0;
-                foreach (var oldVariable in mVariableList)
+                foreach (var oldVariable in mVariableNodes)
                 {
                     String oldVariablename = oldVariable.ToString();
                     String newVariablename = @"var" + variableId;
-                    var vr = new ApplyVariableRenaming(oldVariablename, newVariablename);
-                    root = (CompilationUnitSyntax)vr.Visit(root);
+                    var variableRenaming = new ApplyVariableRenaming(oldVariablename, newVariablename);
+                    root = (CompilationUnitSyntax)variableRenaming.Visit(root);
                     variableId++;
                 }
-                root = (CompilationUnitSyntax)Formatter.Format(root, new AdhocWorkspace());
-                Console.WriteLine("Transformed = \n" + root + "\n");
-                Console.WriteLine("\n");
+                Common.SaveTransformation(root, csFile);
             }
         }
     }
 
     public class LocateVariables : CSharpSyntaxWalker
     {
-        private HashSet<SyntaxToken> mVariableList;
+        private HashSet<SyntaxToken> mVariableNodes;
 
         public HashSet<SyntaxToken> GetVariableList()
         {
-            return mVariableList;
+            return mVariableNodes;
         }
 
         public LocateVariables() : base(SyntaxWalkerDepth.Token)
         {
-            mVariableList = new HashSet<SyntaxToken>();
+            mVariableNodes = new HashSet<SyntaxToken>();
         }
 
         public override void Visit(SyntaxNode node)
@@ -72,7 +61,7 @@ namespace CSharpTransformer.src
                 && (token.Parent.IsKind(SyntaxKind.Parameter)
                 || token.Parent.IsKind(SyntaxKind.VariableDeclarator)))
             {
-                mVariableList.Add(token);
+                mVariableNodes.Add(token);
 
             }
             base.VisitToken(token);

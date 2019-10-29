@@ -1,10 +1,8 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Formatting;
 
 namespace CSharpTransformer.src
 {
@@ -12,25 +10,17 @@ namespace CSharpTransformer.src
     {
         public PermuteStatement()
         {
-            Console.WriteLine("\n[ PermuteStatement ]\n");
+            //Console.WriteLine("\n[ PermuteStatement ]\n");
         }
 
-        public void InspectSourceCode()
+        public void InspectSourceCode(String csFile)
         {
-            var rootDir = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName;
-            var path = Path.Combine(rootDir, "data/original/");
-            string[] files = Directory.GetFiles(path);
-            foreach (string file in files)
+            Common.SetOutputPath(this, csFile);
+            CompilationUnitSyntax root = Common.GetParseUnit(csFile);
+            if (root != null)
             {
-                Console.WriteLine("File = " + Path.GetFileName(file));
-                var txtCode = File.ReadAllText(file);
-                SyntaxTree tree = CSharpSyntaxTree.ParseText(txtCode);
-                var root = (CompilationUnitSyntax)tree.GetRoot();
-                Console.WriteLine("Original = \n" + root + "\n");
-
                 root = ApplyPermuteStatement(root);
-                root = (CompilationUnitSyntax)Formatter.Format(root, new AdhocWorkspace());
-                Console.WriteLine("Transformed = \n" + root + "\n");
+                Common.SaveTransformation(root, csFile);
             }
         }
 
@@ -39,7 +29,8 @@ namespace CSharpTransformer.src
             var statements = root.DescendantNodes().OfType<StatementSyntax>().ToList();
             for (int i = 0, j = 1; i < statements.Count - 1; i++, j++)
             {
-                if (statements[i].Parent == statements[j].Parent)
+                if (statements[i].Parent == statements[j].Parent
+                    && !(NotPermeableStatement(statements[i]) || NotPermeableStatement(statements[j])))
                 {
                     var iIdentifiers = statements[i].DescendantTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).Select(x => x.ToString()).ToList();
                     var jIdentifiers = statements[j].DescendantTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).Select(x => x.ToString()).ToList();
@@ -58,6 +49,14 @@ namespace CSharpTransformer.src
                 }
             }
             return root;
+        }
+
+        private bool NotPermeableStatement(StatementSyntax node)
+        {
+            return (node.IsKind(SyntaxKind.EmptyStatement)
+                || node.IsKind(SyntaxKind.BreakKeyword)
+                || node.IsKind(SyntaxKind.ContinueStatement)
+                || node.IsKind(SyntaxKind.ReturnStatement));
         }
     }
 }

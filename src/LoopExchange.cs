@@ -1,9 +1,7 @@
 ﻿using System;
-using System.IO;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Formatting;
 
 namespace CSharpTransformer.src
 {
@@ -11,26 +9,18 @@ namespace CSharpTransformer.src
     {
         public LoopExchange()
         {
-            Console.WriteLine("\n[ LoopExchange ]\n");
+            //Console.WriteLine("\n[ LoopExchange ]\n");
         }
 
-        public void InspectSourceCode()
+        public void InspectSourceCode(String csFile)
         {
-            var rootDir = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName;
-            var path = Path.Combine(rootDir, "data/original/");
-            string[] files = Directory.GetFiles(path);
-            foreach (string file in files)
+            Common.SetOutputPath(this, csFile);
+            CompilationUnitSyntax root = Common.GetParseUnit(csFile);
+            if (root != null)
             {
-                Console.WriteLine("File = " + Path.GetFileName(file));
-                var txtCode = File.ReadAllText(file);
-                SyntaxTree tree = CSharpSyntaxTree.ParseText(txtCode);
-                var root = (CompilationUnitSyntax)tree.GetRoot();
-                Console.WriteLine("Original = \n" + root + "\n");
-
                 var loopExchange = new ApplyLoopExchange();
                 root = (CompilationUnitSyntax)loopExchange.Visit(root);
-                root = (CompilationUnitSyntax)Formatter.Format(root, new AdhocWorkspace());
-                Console.WriteLine("Transformed = \n" + root + "\n");
+                Common.SaveTransformation(root, csFile);
             }
         }
     }

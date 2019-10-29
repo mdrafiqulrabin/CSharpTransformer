@@ -124,15 +124,13 @@
     <Compile Include="src\SwitchConditional.cs" />
     <Compile Include="src\BooleanExchange.cs" />
     <Compile Include="src\PermuteStatement.cs" />
+    <Compile Include="src\Common.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
-    <None Include="data\original\sample.txt" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="src\" />
-    <Folder Include="data\" />
-    <Folder Include="data\original\" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <Import Project="packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />

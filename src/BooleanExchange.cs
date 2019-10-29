@@ -1,9 +1,9 @@
 ﻿using System;
-using System.IO;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.CodeAnalysis.Formatting;
 
 namespace CSharpTransformer.src
 {
@@ -11,72 +11,133 @@ namespace CSharpTransformer.src
     {
         public BooleanExchange()
         {
-            Console.WriteLine("\n[ BooleanExchange ]\n");
+            //Console.WriteLine("\n[ BooleanExchange ]\n");
         }
 
-        public void InspectSourceCode()
+        public void InspectSourceCode(String csFile)
         {
-            var rootDir = Directory.GetParent(Environment.CurrentDirectory).Parent.FullName;
-            var path = Path.Combine(rootDir, "data/original/");
-            string[] files = Directory.GetFiles(path);
-            foreach (string file in files)
+            Common.SetOutputPath(this, csFile);
+            CompilationUnitSyntax root = Common.GetParseUnit(csFile);
+            if (root != null)
             {
-                Console.WriteLine("File = " + Path.GetFileName(file));
-                var txtCode = File.ReadAllText(file);
-                SyntaxTree tree = CSharpSyntaxTree.ParseText(txtCode);
-                var root = (CompilationUnitSyntax)tree.GetRoot();
-                Console.WriteLine("Original = \n" + root + "\n");
+                var locateBooleans = new LocateBooleans();
+                locateBooleans.Visit(root);
+                HashSet<SyntaxToken> mBooleanNodes = locateBooleans.GetBooleanList();
+                foreach (var booleanNode in mBooleanNodes)
+                {
+                    var booleanExchange = new ApplyBooleanExchange(booleanNode.ToString());
+                    root = (CompilationUnitSyntax)booleanExchange.Visit(root);
+                }
+                Common.SaveTransformation(root, csFile);
+            }
+        }
 
-                SemanticModel semanticModel = CSharpCompilation.Create("BooleanExchange")
-                               .AddReferences(MetadataReference.CreateFromFile(typeof(object).Assembly.Location))
-                               .AddSyntaxTrees(tree)
-                               .GetSemanticModel(tree);
-                var booleanExchange = new ApplyBooleanExchange(semanticModel);
-                root = (CompilationUnitSyntax)booleanExchange.Visit(root);
-                root = (CompilationUnitSyntax)Formatter.Format(root, new AdhocWorkspace());
-                Console.WriteLine("Transformed = \n" + root + "\n");
+
+        public class LocateBooleans : CSharpSyntaxWalker
+        {
+            private HashSet<SyntaxToken> mBooleanNodes;
+
+            public HashSet<SyntaxToken> GetBooleanList()
+            {
+                return mBooleanNodes;
+            }
+
+            public LocateBooleans() : base(SyntaxWalkerDepth.Token)
+            {
+                mBooleanNodes = new HashSet<SyntaxToken>();
+            }
+
+            public override void Visit(SyntaxNode node)
+            {
+                base.Visit(node);
+            }
+
+            public override void VisitToken(SyntaxToken token)
+            {
+                if (token.IsKind(SyntaxKind.IdentifierToken)
+                    && token.Parent.IsKind(SyntaxKind.VariableDeclarator))
+                {
+                    var initObj = ((VariableDeclaratorSyntax)token.Parent).Initializer;
+                    if (initObj != null)
+                    {
+                        String initVal = initObj.Value.ToString().ToLower();
+                        if (initVal.Equals("true") || initVal.Equals("false"))
+                        {
+                            mBooleanNodes.Add(token);
+                        }
+                    }
+                }
+                base.VisitToken(token);
             }
         }
 
         public class ApplyBooleanExchange : CSharpSyntaxRewriter
         {
-            private SemanticModel semanticModel = null;
-            public ApplyBooleanExchange(SemanticModel model)
+            private String booleanNode;
+            public ApplyBooleanExchange(String bolNode)
             {
-                semanticModel = model;
+                booleanNode = bolNode;
             }
 
             public override SyntaxNode Visit(SyntaxNode node)
             {
-                if (
-                    node != null && node.Parent != null &&
-                    (node.IsKind(SyntaxKind.TrueLiteralExpression) || node.IsKind(SyntaxKind.FalseLiteralExpression)) &&
-                    ((node.Parent.Parent != null && node.Parent.Parent.IsKind(SyntaxKind.VariableDeclarator)) || node.Parent.IsKind(SyntaxKind.SimpleAssignmentExpression) || node.Parent.IsKind(SyntaxKind.EqualsExpression))
-                    )
+                if (node != null &&
+                    (node.IsKind(SyntaxKind.TrueLiteralExpression)
+                        || node.IsKind(SyntaxKind.FalseLiteralExpression)))
                 {
-                    if (node.IsKind(SyntaxKind.TrueLiteralExpression)) {
-                        return SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);
-                    } else if (node.IsKind(SyntaxKind.FalseLiteralExpression)) { 
-                        return SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
-                    }
-                } else if (
-                    node != null && node.Parent != null &&
-                    node.IsKind(SyntaxKind.IdentifierName) &&
-                    semanticModel.GetTypeInfo(node).Type.ToString().Equals("boolean") &&
-                    !(node.Parent.IsKind(SyntaxKind.VariableDeclaration) || node.Parent.IsKind(SyntaxKind.Parameter) || node.Parent.IsKind(SyntaxKind.SimpleAssignmentExpression))
-                    )
-                {
-                    /*if (node.Parent != null && node.Parent.IsKind(SyntaxKind.LogicalNotExpression))
+                    String identifier = null;
+                    var declarators = node.Ancestors().OfType<VariableDeclaratorSyntax>().ToList();
+                    if (declarators.Count != 0)
                     {
-                        // TODO: ReplaceNode (!x to x) -> node.Parent by node.
-                    }*/
+                        identifier = ((VariableDeclaratorSyntax)declarators.First()).Identifier.ToString();
+                    } else
+                    {
+                        var expressions = node.Ancestors().OfType<AssignmentExpressionSyntax>().ToList();
+                        if (expressions.Count != 0)
+                        {
+                            if (((AssignmentExpressionSyntax)expressions.First()).Left.IsKind(SyntaxKind.IdentifierName)) {
+                                identifier = ((AssignmentExpressionSyntax)expressions.First()).Left.ToString();
+                            } else
+                            {
+                                identifier = ((AssignmentExpressionSyntax)expressions.First()).Right.ToString();
+                            }
+                        } else
+                        {
+                            /*var equals = node.Ancestors().OfType<BinaryExpressionSyntax>().ToList();
+                            if (equals.Count != 0)
+                            {
+                                if (((BinaryExpressionSyntax)equals.First()).Left.IsKind(SyntaxKind.IdentifierName))
+                                {
+                                    identifier = ((BinaryExpressionSyntax)equals.First()).Left.ToString();
+                                }
+                                else
+                                {
+                                    identifier = ((BinaryExpressionSyntax)equals.First()).Right.ToString();
+                                }
+                            }*/
+                        }
+                    }
+                    if (identifier != null && identifier.Equals(booleanNode))
+                    {
+                        if (node.IsKind(SyntaxKind.TrueLiteralExpression))
+                        {
+                            return SyntaxFactory.LiteralExpression(SyntaxKind.FalseLiteralExpression);
+                        }
+                        else if (node.IsKind(SyntaxKind.FalseLiteralExpression))
+                        {
+                            return SyntaxFactory.LiteralExpression(SyntaxKind.TrueLiteralExpression);
+                        }
+                    }
+                }
+                else if (node != null && node.Parent != null && node.ToString().Equals(booleanNode) &&
+                            !(node.Parent.IsKind(SyntaxKind.VariableDeclaration)
+                                || (node.Parent.IsKind(SyntaxKind.SimpleAssignmentExpression)
+                                    && ((AssignmentExpressionSyntax)node.Parent).Left.ToString().Equals(booleanNode))))
+                {
                     return SyntaxFactory.ParseExpression("!" + node);
                 }
-
                 return base.Visit(node);
             }
         }
     }
 }
-
-
