@@ -17,18 +17,39 @@ namespace CSharpTransformer.src
         public void InspectSourceCode(String csFile)
         {
             Common.SetOutputPath(this, csFile);
-            CompilationUnitSyntax root = Common.GetParseUnit(csFile);
-            if (root != null)
+            CompilationUnitSyntax orgRoot = Common.GetParseUnit(csFile);
+            if (orgRoot != null)
             {
                 var locateBooleans = new LocateBooleans();
-                locateBooleans.Visit(root);
-                HashSet<SyntaxToken> mBooleanNodes = locateBooleans.GetBooleanList();
-                foreach (var booleanNode in mBooleanNodes)
+                locateBooleans.Visit(orgRoot);
+                HashSet<SyntaxToken> booleanNodes = locateBooleans.GetBooleanList();
+                ApplyToPlace(csFile, orgRoot, booleanNodes, false);
+                ApplyToPlace(csFile, orgRoot, booleanNodes, true);
+            }
+        }
+
+        public void ApplyToPlace(String csFile, CompilationUnitSyntax orgRoot,
+            HashSet<SyntaxToken> booleanNodes, bool singlePlace)
+        {
+            int placeId = 0;
+            CompilationUnitSyntax modRoot = orgRoot;
+            foreach (var booleanNode in booleanNodes)
+            {
+                var booleanExchange = new ApplyBooleanExchange(booleanNode.ToString());
+                if (singlePlace)
                 {
-                    var booleanExchange = new ApplyBooleanExchange(booleanNode.ToString());
-                    root = (CompilationUnitSyntax)booleanExchange.Visit(root);
+                    modRoot = Common.GetParseUnit(csFile);
                 }
-                Common.SaveTransformation(root, csFile);
+                modRoot = (CompilationUnitSyntax)booleanExchange.Visit(modRoot);
+                if (singlePlace)
+                {
+                    placeId++;
+                    Common.SaveTransformation(modRoot, csFile, Convert.ToString(placeId));
+                }
+            }
+            if (!singlePlace)
+            {
+                Common.SaveTransformation(modRoot, csFile, Convert.ToString(placeId));
             }
         }
 
