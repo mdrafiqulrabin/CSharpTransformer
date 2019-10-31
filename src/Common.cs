@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -59,11 +60,11 @@ namespace CSharpTransformer.src
             return root;
         }
 
-        public static bool CheckTransformation(CompilationUnitSyntax traRoot, string csFile)
+        public static bool CheckTransformation(CompilationUnitSyntax modRoot, string csFile)
         {
             CompilationUnitSyntax orgRoot = Common.GetParseUnit(csFile);
             String orgTxt = Common.RemoveSpaces(orgRoot.ToString());
-            String traTxt = Common.RemoveSpaces(traRoot.ToString());
+            String traTxt = Common.RemoveSpaces(modRoot.ToString());
             if (orgTxt.Equals(traTxt))
             {
                 return false;
@@ -72,12 +73,17 @@ namespace CSharpTransformer.src
         }
 
         public static void SaveTransformation(CompilationUnitSyntax root,
-            string csFile)
+            string csFile, string place="")
         {
             if (Common.CheckTransformation(root, csFile))
             {
                 String output_dir = Common.mSavePath + Common.ReplaceFirst(csFile,
                     Common.mRootInputPath, "");
+                if (place.Length > 0)
+                {
+                    output_dir = output_dir.Substring(0, output_dir.LastIndexOf(".cs",
+                        StringComparison.Ordinal)) + "_" + place + ".cs";
+                }
                 root = (CompilationUnitSyntax)Formatter.Format(root, new AdhocWorkspace());
                 Common.WriteSourceCode(root, output_dir);
             }

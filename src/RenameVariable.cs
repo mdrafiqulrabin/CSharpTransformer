@@ -1,11 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CSharpTransformer.src
 {
+
+
     public class RenameVariable
     {
         public RenameVariable() 
@@ -16,22 +20,41 @@ namespace CSharpTransformer.src
         public void InspectSourceCode(String csFile)
         {
             Common.SetOutputPath(this, csFile);
-            CompilationUnitSyntax root = Common.GetParseUnit(csFile);
-            if (root != null)
+            CompilationUnitSyntax orgRoot = Common.GetParseUnit(csFile);
+            if (orgRoot != null)
             {
                 var locateVariables = new LocateVariables();
-                locateVariables.Visit(root);
-                HashSet<SyntaxToken> mVariableNodes = locateVariables.GetVariableList();
-                int variableId = 0;
-                foreach (var oldVariable in mVariableNodes)
+                locateVariables.Visit(orgRoot);
+                HashSet<SyntaxToken> variableNodes = locateVariables.GetVariableList();
+                ApplyToPlace(csFile, orgRoot, variableNodes, false);
+                ApplyToPlace(csFile, orgRoot, variableNodes, true);
+            }
+        }
+
+        public void ApplyToPlace(String csFile, CompilationUnitSyntax orgRoot,
+            HashSet<SyntaxToken> variableNodes, bool singlePlace)
+        {
+            int variableId = 0;
+            CompilationUnitSyntax modRoot = orgRoot;
+            foreach (var oldVariable in variableNodes)
+            {
+                String oldVariablename = oldVariable.ToString();
+                String newVariablename = @"var" + variableId;
+                var variableRenaming = new ApplyVariableRenaming(oldVariablename, newVariablename);
+                if (singlePlace)
                 {
-                    String oldVariablename = oldVariable.ToString();
-                    String newVariablename = @"var" + variableId;
-                    var variableRenaming = new ApplyVariableRenaming(oldVariablename, newVariablename);
-                    root = (CompilationUnitSyntax)variableRenaming.Visit(root);
-                    variableId++;
+                    modRoot = Common.GetParseUnit(csFile);
                 }
-                Common.SaveTransformation(root, csFile);
+                modRoot = (CompilationUnitSyntax)variableRenaming.Visit(modRoot);
+                variableId++;
+                if (singlePlace)
+                {
+                    Common.SaveTransformation(modRoot, csFile, Convert.ToString(variableId));
+                }
+            }
+            if (!singlePlace)
+            {
+                Common.SaveTransformation(modRoot, csFile, Convert.ToString(0));
             }
         }
     }
