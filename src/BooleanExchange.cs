@@ -53,7 +53,6 @@ namespace CSharpTransformer.src
             }
         }
 
-
         public class LocateBooleans : CSharpSyntaxWalker
         {
             private HashSet<SyntaxToken> mBooleanNodes;

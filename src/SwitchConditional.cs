@@ -27,7 +27,7 @@ namespace CSharpTransformer.src
                 for (int place = 0; place < switchNodes.Count; place++)
                 {
                     var switchNode = switchNodes.ElementAt(place);
-                    var modRoot = ReplaceSwitchNode(root, switchNode);
+                    var modRoot = root.ReplaceNode(switchNode, SwitchToConditional(switchNode));
                     Common.SaveTransformation(modRoot, csFile, Convert.ToString(place + 1));
                 }
 
@@ -36,22 +36,10 @@ namespace CSharpTransformer.src
                 for (int place = 0; place < switchNodes.Count; place++)
                 {
                     var switchNode = remSwitchNodes.ElementAt(0); //as switch type change
-                    root = ReplaceSwitchNode(root, switchNode);
+                    root = root.ReplaceNode(switchNode, SwitchToConditional(switchNode));
                     remSwitchNodes = root.DescendantNodes().OfType<SwitchStatementSyntax>().ToList();
                 }
                 Common.SaveTransformation(root, csFile, Convert.ToString(0));
-            }
-        }
-
-        private CompilationUnitSyntax ReplaceSwitchNode(CompilationUnitSyntax root, SwitchStatementSyntax switchNode)
-        {
-            if (switchNode.IsKind(SyntaxKind.SwitchStatement))
-            {
-                return root.ReplaceNode(switchNode, SwitchToConditional(switchNode));
-            }
-            else
-            {
-                return root;
             }
         }
 

@@ -1,6 +1,5 @@
 ﻿using System;
 using System.IO;
-using System.Runtime.Serialization.Formatters.Binary;
 using System.Text.RegularExpressions;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -115,7 +114,6 @@ namespace CSharpTransformer.src
                 Console.WriteLine(ex);
             }
         }
-
 
         public static SemanticModel GetSemanticModel(SyntaxTree tree, String name)
         {
