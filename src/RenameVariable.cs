@@ -22,7 +22,10 @@ namespace CSharpTransformer.src
                 var locateVariables = new LocateVariables();
                 locateVariables.Visit(orgRoot);
                 HashSet<SyntaxToken> variableNodes = locateVariables.GetVariableList();
-                ApplyToPlace(csFile, orgRoot, variableNodes, false);
+                if (variableNodes.Count > 1)
+                {
+                    ApplyToPlace(csFile, orgRoot, variableNodes, false);
+                }
                 ApplyToPlace(csFile, orgRoot, variableNodes, true);
             }
         }

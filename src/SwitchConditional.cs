@@ -32,14 +32,17 @@ namespace CSharpTransformer.src
                 }
 
                 // apply to all place
-                var remSwitchNodes = root.DescendantNodes().OfType<SwitchStatementSyntax>().ToList();
-                for (int place = 0; place < switchNodes.Count; place++)
+                if (switchNodes.Count > 1)
                 {
-                    var switchNode = remSwitchNodes.ElementAt(0); //as switch type change
-                    root = root.ReplaceNode(switchNode, SwitchToConditional(switchNode));
-                    remSwitchNodes = root.DescendantNodes().OfType<SwitchStatementSyntax>().ToList();
+                    var remSwitchNodes = root.DescendantNodes().OfType<SwitchStatementSyntax>().ToList();
+                    for (int place = 0; place < switchNodes.Count; place++)
+                    {
+                        var switchNode = remSwitchNodes.ElementAt(0); //as switch type change
+                        root = root.ReplaceNode(switchNode, SwitchToConditional(switchNode));
+                        remSwitchNodes = root.DescendantNodes().OfType<SwitchStatementSyntax>().ToList();
+                    }
+                    Common.SaveTransformation(root, csFile, Convert.ToString(0));
                 }
-                Common.SaveTransformation(root, csFile, Convert.ToString(0));
             }
         }
 

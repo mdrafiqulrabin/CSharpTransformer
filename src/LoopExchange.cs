@@ -32,15 +32,18 @@ namespace CSharpTransformer.src
                 }
 
                 // apply to all place
-                for (int place = 0; place < loopNodes.Count; place++)
+                if (loopNodes.Count > 1)
                 {
-                    var loopNode = loopNodes.ElementAt(place);
-                    root = ReplaceLoopNode(root, loopNode);
-                    loopNodes = root.DescendantNodes().Where(node =>
-                        (node.IsKind(SyntaxKind.ForStatement)
-                        || node.IsKind(SyntaxKind.WhileStatement))).ToList();
+                    for (int place = 0; place < loopNodes.Count; place++)
+                    {
+                        var loopNode = loopNodes.ElementAt(place);
+                        root = ReplaceLoopNode(root, loopNode);
+                        loopNodes = root.DescendantNodes().Where(node =>
+                            (node.IsKind(SyntaxKind.ForStatement)
+                            || node.IsKind(SyntaxKind.WhileStatement))).ToList();
+                    }
+                    Common.SaveTransformation(root, csFile, Convert.ToString(0));
                 }
-                Common.SaveTransformation(root, csFile, Convert.ToString(0));
             }
         }
 

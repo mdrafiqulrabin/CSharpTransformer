@@ -27,9 +27,12 @@ namespace CSharpTransformer.src
                     Common.SaveTransformation(modRoot, csFile, Convert.ToString(place + 1));
                 }
 
-                // apply to all place 
-                root = ApplyToAll(root);
-                Common.SaveTransformation(root, csFile, Convert.ToString(0));
+                // apply to all place
+                if (stmtNodes.Count > 1)
+                {
+                    root = ApplyToAll(root);
+                    Common.SaveTransformation(root, csFile, Convert.ToString(0));
+                }
             }
         }
 

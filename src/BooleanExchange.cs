@@ -23,7 +23,10 @@ namespace CSharpTransformer.src
                 var locateBooleans = new LocateBooleans();
                 locateBooleans.Visit(orgRoot);
                 HashSet<SyntaxToken> booleanNodes = locateBooleans.GetBooleanList();
-                ApplyToPlace(csFile, orgRoot, booleanNodes, false);
+                if (booleanNodes.Count > 1)
+                {
+                    ApplyToPlace(csFile, orgRoot, booleanNodes, false);
+                }
                 ApplyToPlace(csFile, orgRoot, booleanNodes, true);
             }
         }
