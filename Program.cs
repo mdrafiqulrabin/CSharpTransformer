@@ -5,7 +5,7 @@ namespace CSharpTransformer
 {
     class MainClass
     {
-        /* root folder for input -> '~/methods'
+        /* root folder for input  -> '~/methods'
          * root folder for output -> '~/transforms'
          *
          * extracted single method of project should be in 'methods' folder 
