@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -18,55 +19,110 @@ namespace CSharpTransformer.src
             CompilationUnitSyntax root = Common.GetParseUnit(csFile);
             if (root != null)
             {
+                // apply to single place
+                var loopNodes = root.DescendantNodes().Where(n => (n.IsKind(SyntaxKind.ForStatement) || n.IsKind(SyntaxKind.WhileStatement))).ToList();
+                for (int place = 0; place < loopNodes.Count; place++)
+                {
+                    var loopNode = loopNodes.ElementAt(place);
+                    if (loopNode.IsKind(SyntaxKind.ForStatement))
+                    {
+                        var modRoot = root.ReplaceNode(loopNode, ForToWhile((ForStatementSyntax)loopNode));
+                        Common.SaveTransformation(modRoot, csFile, Convert.ToString(place + 1));
+                    }
+                    else if (loopNode.IsKind(SyntaxKind.WhileStatement))
+                    {
+                        var modRoot = root.ReplaceNode(loopNode, WhileToFor((WhileStatementSyntax)loopNode));
+                        Common.SaveTransformation(modRoot, csFile, Convert.ToString(place + 1));
+                    } else
+                    {
+                        continue;
+                    }
+                }
+
+                // apply to all place 
                 var loopExchange = new ApplyLoopExchange();
                 root = (CompilationUnitSyntax)loopExchange.Visit(root);
-                Common.SaveTransformation(root, csFile);
+                Common.SaveTransformation(root, csFile, Convert.ToString(0));
             }
         }
-    }
 
-    public class ApplyLoopExchange : CSharpSyntaxRewriter
-    {
-        public ApplyLoopExchange() {}
-
-        public override SyntaxNode Visit(SyntaxNode node)
+        public class ApplyLoopExchange : CSharpSyntaxRewriter
         {
-            if (node.IsKind(SyntaxKind.ForStatement))
+            public ApplyLoopExchange() { }
+
+            public override SyntaxNode Visit(SyntaxNode node)
             {
-                ExpressionSyntax condition = (node as ForStatementSyntax).Condition;
-                var innerStatements = new SyntaxList<StatementSyntax>();
-                foreach (var v in ((node as ForStatementSyntax).Statement as BlockSyntax).Statements)
+                if (node.IsKind(SyntaxKind.ForStatement))
+                {
+                    return ForToWhile((ForStatementSyntax)node);
+                }
+                else if (node.IsKind(SyntaxKind.WhileStatement))
+                {
+                    return WhileToFor((WhileStatementSyntax)node);
+                }
+                return base.Visit(node);
+            }
+        }
+
+        private static SyntaxNode ForToWhile(ForStatementSyntax node)
+        {
+            ExpressionSyntax condition = node.Condition;
+            if (condition == null)
+            {
+                condition = SyntaxFactory.ParseExpression("true");
+            }
+            var innerStatements = new SyntaxList<StatementSyntax>();
+            StatementSyntax forStatements = node.Statement;
+            if (forStatements != null && !forStatements.IsKind(SyntaxKind.EmptyStatement))
+            {
+                foreach (var v in (forStatements as BlockSyntax).Statements)
                 {
                     innerStatements = innerStatements.Add(v);
                 }
-                foreach (var v in (node as ForStatementSyntax).Incrementors)
-                {
-                    innerStatements = innerStatements.Add(SyntaxFactory.ExpressionStatement(v));
-                }
-                var innerBlock = SyntaxFactory.Block(innerStatements);
-                var whileLoop = SyntaxFactory.WhileStatement(condition, innerBlock);
-
-                var outerStatements = new SyntaxList<StatementSyntax>();
-                outerStatements = outerStatements.Add(SyntaxFactory.ParseStatement((node as ForStatementSyntax).Declaration + ";"));
-                foreach (var v in (node as ForStatementSyntax).Initializers)
-                {
-                    outerStatements = outerStatements.Add(SyntaxFactory.ExpressionStatement(v));
-                }
-                outerStatements = outerStatements.Add(whileLoop);
-                var outerBlock = SyntaxFactory.Block(outerStatements);
-
-                return outerBlock;
             }
-            else if (node.IsKind(SyntaxKind.WhileStatement))
+            foreach (var v in node.Incrementors)
             {
-                SeparatedSyntaxList<ExpressionSyntax> initializers = new SeparatedSyntaxList<ExpressionSyntax>();
-                ExpressionSyntax condition = (node as WhileStatementSyntax).Condition;
-                SeparatedSyntaxList<ExpressionSyntax> incrementors = new SeparatedSyntaxList<ExpressionSyntax>();
-                StatementSyntax statement = (node as WhileStatementSyntax).Statement;
-                var retVal = SyntaxFactory.ForStatement(null, initializers, condition, incrementors, statement);
-                return retVal;
+                innerStatements = innerStatements.Add(SyntaxFactory.ExpressionStatement(v));
             }
-            return base.Visit(node);
+            WhileStatementSyntax whileLoop;
+            if (innerStatements.Count > 0)
+            {
+                var innerBlock = SyntaxFactory.Block(innerStatements);
+                whileLoop = SyntaxFactory.WhileStatement(condition, innerBlock);
+            }
+            else
+            {
+                whileLoop = SyntaxFactory.WhileStatement(condition, SyntaxFactory.EmptyStatement());
+            }
+
+            var outerStatements = new SyntaxList<StatementSyntax>();
+            VariableDeclarationSyntax declaration = node.Declaration;
+            if (declaration != null)
+            {
+                outerStatements = outerStatements.Add(SyntaxFactory.ParseStatement(declaration + ";"));
+            }
+            foreach (var v in node.Initializers)
+            {
+                outerStatements = outerStatements.Add(SyntaxFactory.ExpressionStatement(v));
+            }
+            if (outerStatements.Count > 0)
+            {
+                outerStatements = outerStatements.Add(whileLoop);
+                return SyntaxFactory.Block(outerStatements);
+            }
+            else
+            {
+                return whileLoop;
+            }
+        }
+
+        private static SyntaxNode WhileToFor(WhileStatementSyntax node)
+        {
+            SeparatedSyntaxList<ExpressionSyntax> initializers = new SeparatedSyntaxList<ExpressionSyntax>();
+            ExpressionSyntax condition = node.Condition;
+            SeparatedSyntaxList<ExpressionSyntax> incrementors = new SeparatedSyntaxList<ExpressionSyntax>();
+            StatementSyntax statement = node.Statement;
+            return SyntaxFactory.ForStatement(null, initializers, condition, incrementors, statement);
         }
     }
 }
