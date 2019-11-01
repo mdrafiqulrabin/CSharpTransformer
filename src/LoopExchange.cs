@@ -19,48 +19,43 @@ namespace CSharpTransformer.src
             CompilationUnitSyntax root = Common.GetParseUnit(csFile);
             if (root != null)
             {
+                var loopNodes = root.DescendantNodes().Where(node =>
+                        (node.IsKind(SyntaxKind.ForStatement)
+                        || node.IsKind(SyntaxKind.WhileStatement))).ToList();
+
                 // apply to single place
-                var loopNodes = root.DescendantNodes().Where(n => (n.IsKind(SyntaxKind.ForStatement) || n.IsKind(SyntaxKind.WhileStatement))).ToList();
                 for (int place = 0; place < loopNodes.Count; place++)
                 {
                     var loopNode = loopNodes.ElementAt(place);
-                    if (loopNode.IsKind(SyntaxKind.ForStatement))
-                    {
-                        var modRoot = root.ReplaceNode(loopNode, ForToWhile((ForStatementSyntax)loopNode));
-                        Common.SaveTransformation(modRoot, csFile, Convert.ToString(place + 1));
-                    }
-                    else if (loopNode.IsKind(SyntaxKind.WhileStatement))
-                    {
-                        var modRoot = root.ReplaceNode(loopNode, WhileToFor((WhileStatementSyntax)loopNode));
-                        Common.SaveTransformation(modRoot, csFile, Convert.ToString(place + 1));
-                    } else
-                    {
-                        continue;
-                    }
+                    var modRoot = ReplaceLoopNode(root, loopNode);
+                    Common.SaveTransformation(modRoot, csFile, Convert.ToString(place + 1));
                 }
 
-                // apply to all place 
-                var loopExchange = new ApplyLoopExchange();
-                root = (CompilationUnitSyntax)loopExchange.Visit(root);
+                // apply to all place
+                for (int place = 0; place < loopNodes.Count; place++)
+                {
+                    var loopNode = loopNodes.ElementAt(place);
+                    root = ReplaceLoopNode(root, loopNode);
+                    loopNodes = root.DescendantNodes().Where(node =>
+                        (node.IsKind(SyntaxKind.ForStatement)
+                        || node.IsKind(SyntaxKind.WhileStatement))).ToList();
+                }
                 Common.SaveTransformation(root, csFile, Convert.ToString(0));
             }
         }
 
-        public class ApplyLoopExchange : CSharpSyntaxRewriter
+        private CompilationUnitSyntax ReplaceLoopNode(CompilationUnitSyntax root, SyntaxNode loopNode)
         {
-            public ApplyLoopExchange() { }
-
-            public override SyntaxNode Visit(SyntaxNode node)
+            if (loopNode.IsKind(SyntaxKind.ForStatement))
             {
-                if (node.IsKind(SyntaxKind.ForStatement))
-                {
-                    return ForToWhile((ForStatementSyntax)node);
-                }
-                else if (node.IsKind(SyntaxKind.WhileStatement))
-                {
-                    return WhileToFor((WhileStatementSyntax)node);
-                }
-                return base.Visit(node);
+                return root.ReplaceNode(loopNode, ForToWhile((ForStatementSyntax)loopNode));
+            }
+            else if (loopNode.IsKind(SyntaxKind.WhileStatement))
+            {
+                return root.ReplaceNode(loopNode, WhileToFor((WhileStatementSyntax)loopNode));
+            } else
+            {
+                return root;
             }
         }
 
