@@ -21,33 +21,37 @@ namespace CSharpTransformer.src
             CompilationUnitSyntax root = Common.GetParseUnit(csFile);
             if (root != null)
             {
+                var switchNodes = root.DescendantNodes().OfType<SwitchStatementSyntax>().ToList();
+
                 // apply to single place
-                var switchStatements = root.DescendantNodes().OfType<SwitchStatementSyntax>().ToList();
-                for (int place = 0; place < switchStatements.Count; place++)
+                for (int place = 0; place < switchNodes.Count; place++)
                 {
-                    var switchStatement = switchStatements.ElementAt(place);
-                    var modRoot = root.ReplaceNode(switchStatement, SwitchToConditional(switchStatement));
+                    var switchNode = switchNodes.ElementAt(place);
+                    var modRoot = ReplaceSwitchNode(root, switchNode);
                     Common.SaveTransformation(modRoot, csFile, Convert.ToString(place + 1));
                 }
 
-                // apply to all place 
-                var switchConditional = new ApplySwitchConditional();
-                root = (CompilationUnitSyntax)switchConditional.Visit(root);
+                // apply to all place
+                var remSwitchNodes = root.DescendantNodes().OfType<SwitchStatementSyntax>().ToList();
+                for (int place = 0; place < switchNodes.Count; place++)
+                {
+                    var switchNode = remSwitchNodes.ElementAt(0); //as switch type change
+                    root = ReplaceSwitchNode(root, switchNode);
+                    remSwitchNodes = root.DescendantNodes().OfType<SwitchStatementSyntax>().ToList();
+                }
                 Common.SaveTransformation(root, csFile, Convert.ToString(0));
             }
         }
 
-        public class ApplySwitchConditional : CSharpSyntaxRewriter
+        private CompilationUnitSyntax ReplaceSwitchNode(CompilationUnitSyntax root, SwitchStatementSyntax switchNode)
         {
-            public ApplySwitchConditional() { }
-
-            public override SyntaxNode VisitSwitchStatement(SwitchStatementSyntax node)
+            if (switchNode.IsKind(SyntaxKind.SwitchStatement))
             {
-                if (node.IsKind(SyntaxKind.SwitchStatement))
-                {
-                    return SwitchToConditional(node);
-                }
-                return base.Visit(node);
+                return root.ReplaceNode(switchNode, SwitchToConditional(switchNode));
+            }
+            else
+            {
+                return root;
             }
         }
 
