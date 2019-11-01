@@ -125,6 +125,7 @@
     <Compile Include="src\BooleanExchange.cs" />
     <Compile Include="src\PermuteStatement.cs" />
     <Compile Include="src\Common.cs" />
+    <Compile Include="src\UnusedStatement.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
