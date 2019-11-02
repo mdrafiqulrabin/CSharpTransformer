@@ -73,9 +73,15 @@ namespace CSharpTransformer.src
             StatementSyntax forStatements = node.Statement;
             if (forStatements != null && !forStatements.IsKind(SyntaxKind.EmptyStatement))
             {
-                foreach (var v in (forStatements as BlockSyntax).Statements)
+                if (forStatements.IsKind(SyntaxKind.Block))
                 {
-                    innerStatements = innerStatements.Add(v);
+                    foreach (var v in (forStatements as BlockSyntax).Statements)
+                    {
+                        innerStatements = innerStatements.Add(v);
+                    }
+                } else
+                {
+                    innerStatements = innerStatements.Add(forStatements);
                 }
             }
             foreach (var v in node.Incrementors)

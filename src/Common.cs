@@ -106,6 +106,7 @@ namespace CSharpTransformer.src
         {
             try
             {
+                //Console.WriteLine(root.ToString());
                 new FileInfo(codePath).Directory.Create();
                 File.WriteAllText(codePath, root.ToString());
             }
@@ -127,6 +128,7 @@ namespace CSharpTransformer.src
         public static bool IsNotPermeableStatement(StatementSyntax node)
         {
             return (
+                node.IsKind(SyntaxKind.Block) ||
                 node.IsKind(SyntaxKind.LocalDeclarationStatement) ||
                 node.IsKind(SyntaxKind.GotoStatement) ||
                 node.IsKind(SyntaxKind.LabeledStatement) ||
