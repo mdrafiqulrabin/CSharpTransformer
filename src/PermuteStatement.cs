@@ -65,7 +65,8 @@ namespace CSharpTransformer.src
         private bool PermeableStatement(StatementSyntax stmti, StatementSyntax stmtj)
         {
             if (stmti.Parent == stmtj.Parent
-                && !(NotPermeableStatement(stmti) || NotPermeableStatement(stmtj)))
+                && !(Common.IsNotPermeableStatement(stmti)
+                || Common.IsNotPermeableStatement(stmtj)))
             {
                 var iIdentifiers = stmti.DescendantTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).Select(x => x.ToString()).ToList();
                 var jIdentifiers = stmtj.DescendantTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).Select(x => x.ToString()).ToList();
@@ -75,14 +76,6 @@ namespace CSharpTransformer.src
                 }
             }
             return false;
-        }
-
-        private bool NotPermeableStatement(StatementSyntax node)
-        {
-            return (node.IsKind(SyntaxKind.EmptyStatement)
-                || node.IsKind(SyntaxKind.BreakKeyword)
-                || node.IsKind(SyntaxKind.ContinueStatement)
-                || node.IsKind(SyntaxKind.ReturnStatement));
         }
     }
 }

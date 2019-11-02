@@ -123,5 +123,17 @@ namespace CSharpTransformer.src
                .GetSemanticModel(tree);
             return semanticModel;
         }
+
+        public static bool IsNotPermeableStatement(StatementSyntax node)
+        {
+            return (
+                node.IsKind(SyntaxKind.LocalDeclarationStatement) ||
+                node.IsKind(SyntaxKind.GotoStatement) ||
+                node.IsKind(SyntaxKind.LabeledStatement) ||
+                node.IsKind(SyntaxKind.BreakStatement) ||
+                node.IsKind(SyntaxKind.ContinueStatement) ||
+                node.IsKind(SyntaxKind.ReturnStatement)
+            );
+        }
     }
 }

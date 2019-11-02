@@ -28,19 +28,12 @@ namespace CSharpTransformer.src
         {
             var loopNodes = root.DescendantNodes()
                 .OfType<StatementSyntax>()
-                .Where(node =>
-                !(
-                    node.IsKind(SyntaxKind.LocalDeclarationStatement) ||
-                    node.IsKind(SyntaxKind.GotoStatement) ||
-                    node.IsKind(SyntaxKind.LabeledStatement) ||
-                    node.IsKind(SyntaxKind.BreakStatement) ||
-                    node.IsKind(SyntaxKind.ContinueStatement) ||
-                    node.IsKind(SyntaxKind.ReturnStatement)
-                )).ToList();
-            if (loopNodes.Count > 0)
+                .Where(node => !Common.IsNotPermeableStatement(node)).ToList();
+            if (loopNodes.Count > 1)
             {
-                int place = new Random().Next(0, loopNodes.Count); // don't use +1
-                StatementSyntax tryStr = (StatementSyntax)getTryCatch((StatementSyntax)loopNodes.ElementAt(place));
+                loopNodes.RemoveAt(0); // main block
+                int place = new Random().Next(0, loopNodes.Count); // overflow +1
+                StatementSyntax tryStr = getTryCatch(loopNodes.ElementAt(place));
                 root = root.ReplaceNode(loopNodes.ElementAt(place), tryStr);
             }
             else
