@@ -34,8 +34,8 @@ namespace CSharpTransformer.src
                 {
                     SyntaxList<StatementSyntax> mstmt = mbody.Statements;
                     int place = new Random().Next(0, mstmt.Count + 1);
-                    StatementSyntax unusedStr = (StatementSyntax)getUnreachableStatement();
-                    mstmt = mstmt.Insert(place, unusedStr);
+                    StatementSyntax unreachableStr = (StatementSyntax)getUnreachableStatement();
+                    mstmt = mstmt.Insert(place, unreachableStr);
                     mbody = mbody.WithStatements(mstmt);
                     return root.ReplaceNode(methodSyntax, methodSyntax.WithBody(mbody));
                 }

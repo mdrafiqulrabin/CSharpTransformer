@@ -39,6 +39,7 @@ namespace CSharpTransformer.src
                     new PermuteStatement().InspectSourceCode(csFile);
                     new UnusedStatement().InspectSourceCode(csFile);
                     new UnreachableStatement().InspectSourceCode(csFile);
+                    new TryCatch().InspectSourceCode(csFile);
                 }
                 catch (Exception ex)
                 {

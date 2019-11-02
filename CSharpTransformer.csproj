@@ -127,6 +127,7 @@
     <Compile Include="src\Common.cs" />
     <Compile Include="src\UnusedStatement.cs" />
     <Compile Include="src\UnreachableStatement.cs" />
+    <Compile Include="src\TryCatch.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
