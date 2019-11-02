@@ -108,6 +108,7 @@ namespace CSharpTransformer.src
                     (node.IsKind(SyntaxKind.TrueLiteralExpression)
                         || node.IsKind(SyntaxKind.FalseLiteralExpression)))
                 {
+                    //i.e. x=true/false --> x=false/true
                     String identifier = null;
                     var declarators = node.Ancestors().OfType<VariableDeclaratorSyntax>().ToList();
                     if (declarators.Count != 0)
@@ -152,12 +153,28 @@ namespace CSharpTransformer.src
                         }
                     }
                 }
+                else if (node != null && node.IsKind(SyntaxKind.LogicalNotExpression)
+                    && ((PrefixUnaryExpressionSyntax)node).Operand.ToString().Equals(booleanNode))
+                {
+                    //i.e. !x --> x
+                    return SyntaxFactory.ParseExpression(((PrefixUnaryExpressionSyntax)node).Operand.ToString());
+                }
                 else if (node != null && node.Parent != null && node.ToString().Equals(booleanNode) &&
                             !(node.Parent.IsKind(SyntaxKind.VariableDeclaration)
                                 || (node.Parent.IsKind(SyntaxKind.SimpleAssignmentExpression)
                                     && ((AssignmentExpressionSyntax)node.Parent).Left.ToString().Equals(booleanNode))))
                 {
-                    return SyntaxFactory.ParseExpression("!" + node);
+                    if (node.IsKind(SyntaxKind.Argument))
+                    {
+                        //i.e. call(x) --> call(!x)
+                        var argumentListSyntax = SyntaxFactory.ParseArgumentList("!" + node);
+                        return argumentListSyntax.ChildNodes().First();
+                    }
+                    else
+                    {
+                        //i.e. y=x --> y=!x
+                        return SyntaxFactory.ParseExpression("!" + node);
+                    }
                 }
                 return base.Visit(node);
             }

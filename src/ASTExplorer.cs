@@ -43,6 +43,7 @@ namespace CSharpTransformer.src
                 }
                 catch (Exception ex)
                 {
+                    Console.WriteLine("Exception: " + csFile);
                     Console.WriteLine(ex);
                 }
             }

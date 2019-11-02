@@ -106,7 +106,6 @@ namespace CSharpTransformer.src
         {
             try
             {
-                //Console.WriteLine(root.ToString());
                 new FileInfo(codePath).Directory.Create();
                 File.WriteAllText(codePath, root.ToString());
             }
