@@ -161,6 +161,7 @@ namespace CSharpTransformer.src
                 }
                 else if (node != null && node.Parent != null && node.ToString().Equals(booleanNode) &&
                             !(node.Parent.IsKind(SyntaxKind.VariableDeclaration)
+                                || node.Parent.IsKind(SyntaxKind.DeclarationExpression)
                                 || (node.Parent.IsKind(SyntaxKind.SimpleAssignmentExpression)
                                     && ((AssignmentExpressionSyntax)node.Parent).Left.ToString().Equals(booleanNode))))
                 {
