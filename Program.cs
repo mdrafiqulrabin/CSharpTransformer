@@ -8,8 +8,8 @@ namespace CSharpTransformer
         /* root folder for input  -> '~/methods'
          * root folder for output -> '~/transforms'
          *
-         * extracted single method of project should be in 'methods' folder 
-         * seperate folder for each refactoring will be cretaed in 'transforms' folder
+         * extracted single method of project should be in 'methods' folder
+         * separate folder for each refactoring will be created in 'transforms' folder
          */
 
         static readonly String inpPath = "/Users/mdrafiqulrabin/Projects/TNPA/dataset/csharp/methods/";

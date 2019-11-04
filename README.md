@@ -4,4 +4,4 @@
 >> extracted single method of project should be in 'methods' folder 
 
 - root folder for output -> '~/transforms'
->> seperate folder for each refactoring will be cretaed in 'transforms' folder
+>> separate folder for each refactoring will be created in 'transforms' folder
