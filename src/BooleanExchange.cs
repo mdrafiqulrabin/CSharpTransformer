@@ -78,16 +78,13 @@ namespace CSharpTransformer.src
             public override void VisitToken(SyntaxToken token)
             {
                 if (token.IsKind(SyntaxKind.IdentifierToken)
-                    && token.Parent.IsKind(SyntaxKind.VariableDeclarator))
+                    && token.Parent.IsKind(SyntaxKind.VariableDeclarator)
+                    && token.Parent.Parent.IsKind(SyntaxKind.VariableDeclaration))
                 {
-                    var initObj = ((VariableDeclaratorSyntax)token.Parent).Initializer;
-                    if (initObj != null)
+                    VariableDeclarationSyntax vds = (VariableDeclarationSyntax)token.Parent.Parent;
+                    if (vds.Type.ToString().ToLower().Equals("bool")
+                        || vds.Type.ToString().ToLower().Equals("boolean"))
                     {
-                        /*String initVal = initObj.Value.ToString().ToLower();
-                        if (initVal.Equals("true") || initVal.Equals("false"))
-                        {
-                            mBooleanNodes.Add(token);
-                        }*/
                         mBooleanNodes.Add(token);
                     }
                 }
