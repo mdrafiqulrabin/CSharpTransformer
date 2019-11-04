@@ -83,23 +83,73 @@ namespace CSharpTransformer.src
                     var initObj = ((VariableDeclaratorSyntax)token.Parent).Initializer;
                     if (initObj != null)
                     {
-                        String initVal = initObj.Value.ToString().ToLower();
+                        /*String initVal = initObj.Value.ToString().ToLower();
                         if (initVal.Equals("true") || initVal.Equals("false"))
                         {
                             mBooleanNodes.Add(token);
-                        }
+                        }*/
+                        mBooleanNodes.Add(token);
                     }
                 }
                 base.VisitToken(token);
             }
         }
 
+        private static String getNotExpStr(String nodeStr, String nodeRef)
+        {
+            if (nodeStr.Equals("true"))
+            {
+                return "false";
+            } else if (nodeStr.Equals("false"))
+            {
+                return "true";
+            }
+            else if (nodeStr.StartsWith("!", StringComparison.Ordinal) &&
+                nodeStr.TrimStart('!').Equals(nodeRef))
+            {
+                return nodeStr.TrimStart('!');
+            }
+            else
+            {
+                String expStr = "!";
+                if (nodeStr.Length > 1)
+                {
+                    expStr += "(" + nodeStr + ")";
+                }
+                else
+                {
+                    expStr += nodeStr;
+                }
+                return expStr;
+            }
+        }
+
+        class IdentifierNotRewriter : CSharpSyntaxRewriter
+        {
+            private String mBooleanNode;
+            public IdentifierNotRewriter(String booleanNode)
+            {
+                mBooleanNode = booleanNode;
+            }
+
+            public override SyntaxNode Visit(SyntaxNode node)
+            {
+                if (node != null && (
+                    (node.IsKind(SyntaxKind.LogicalNotExpression) && node.ToString().Equals("!"+mBooleanNode))
+                    || (node.IsKind(SyntaxKind.IdentifierName) && node.ToString().Equals(mBooleanNode))))
+                {
+                    return SyntaxFactory.ParseExpression(getNotExpStr(node.ToString(),mBooleanNode));
+                }
+                return base.Visit(node);
+            }
+        }
+
         public class ApplyBooleanExchange : CSharpSyntaxRewriter
         {
-            private String booleanNode;
-            public ApplyBooleanExchange(String bolNode)
+            private String mBooleanNode;
+            public ApplyBooleanExchange(String booleanNode)
             {
-                booleanNode = bolNode;
+                mBooleanNode = booleanNode;
             }
 
             public override SyntaxNode Visit(SyntaxNode node)
@@ -141,7 +191,7 @@ namespace CSharpTransformer.src
                             }*/
                         }
                     }
-                    if (identifier != null && identifier.Equals(booleanNode))
+                    if (identifier != null && identifier.Equals(mBooleanNode))
                     {
                         if (node.IsKind(SyntaxKind.TrueLiteralExpression))
                         {
@@ -154,28 +204,48 @@ namespace CSharpTransformer.src
                     }
                 }
                 else if (node != null && node.IsKind(SyntaxKind.LogicalNotExpression)
-                    && ((PrefixUnaryExpressionSyntax)node).Operand.ToString().Equals(booleanNode))
+                    && ((PrefixUnaryExpressionSyntax)node).Operand.ToString().Equals(mBooleanNode))
                 {
                     //i.e. !x --> x
                     return SyntaxFactory.ParseExpression(((PrefixUnaryExpressionSyntax)node).Operand.ToString());
                 }
-                else if (node != null && node.Parent != null && node.ToString().Equals(booleanNode) &&
+                else if (node != null && node.Parent != null && node.ToString().Equals(mBooleanNode) &&
                             !(node.Parent.IsKind(SyntaxKind.VariableDeclaration)
                                 || node.Parent.IsKind(SyntaxKind.DeclarationExpression)
                                 || (node.Parent.IsKind(SyntaxKind.SimpleAssignmentExpression)
-                                    && ((AssignmentExpressionSyntax)node.Parent).Left.ToString().Equals(booleanNode))))
+                                    && ((AssignmentExpressionSyntax)node.Parent).Left.ToString().Equals(mBooleanNode))))
                 {
                     if (node.IsKind(SyntaxKind.Argument))
                     {
                         //i.e. call(x) --> call(!x)
-                        var argumentListSyntax = SyntaxFactory.ParseArgumentList("!" + node);
+                        var argumentListSyntax = SyntaxFactory.ParseArgumentList(getNotExpStr(node.ToString(), mBooleanNode));
                         return argumentListSyntax.ChildNodes().First();
                     }
                     else
                     {
                         //i.e. y=x --> y=!x
-                        return SyntaxFactory.ParseExpression("!" + node);
+                        return SyntaxFactory.ParseExpression(getNotExpStr(node.ToString(), mBooleanNode));
                     }
+                }
+                else if (node != null && node.Parent != null
+                    && node.Parent.IsKind(SyntaxKind.SimpleAssignmentExpression)
+                    && ((AssignmentExpressionSyntax)node.Parent).Left.ToString().Equals(mBooleanNode)
+                    && ((AssignmentExpressionSyntax)node.Parent).Right.ToString().Equals(node.ToString()))
+                {
+                    //i.e. x = call(!x,r(x)) --> x = !(call(!!x,r(!x)))
+                    node = new IdentifierNotRewriter(mBooleanNode).Visit(node);
+                    return SyntaxFactory.ParseExpression(getNotExpStr(node.ToString(), mBooleanNode));
+                }
+                else if (node != null && node.Parent != null
+                    && node.IsKind(SyntaxKind.EqualsValueClause)
+                    && node.Parent.IsKind(SyntaxKind.VariableDeclarator)
+                    && ((VariableDeclaratorSyntax)node.Parent).Identifier.ToString().Equals(mBooleanNode)
+                    && ((VariableDeclaratorSyntax)node.Parent).Initializer.Value.ToString().Equals(((EqualsValueClauseSyntax)node).Value.ToString()))
+                {
+                    //i.e. boolean y = x --> boolean y = !x
+                    return ((EqualsValueClauseSyntax)node).Update(
+                        ((EqualsValueClauseSyntax)node).EqualsToken,
+                        SyntaxFactory.ParseExpression(getNotExpStr(((EqualsValueClauseSyntax)node).Value.ToString(), mBooleanNode)));
                 }
                 return base.Visit(node);
             }
