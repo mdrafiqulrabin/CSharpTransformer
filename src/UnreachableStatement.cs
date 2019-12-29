@@ -45,9 +45,8 @@ namespace CSharpTransformer.src
 
         private StatementSyntax getUnreachableStatement()
         {
-            String unreachableStr = "while(false){" +
-                    "\n // this is an unreachable statement" +
-                    "\n double rand_next_double = " + new Random().NextDouble() + ";" +
+            String unreachableStr = "if(false){" +
+                    "\n System.Console.WriteLine(\"an unreachable statement\");" +
                     "\n }\n";
             return SyntaxFactory.ParseStatement(unreachableStr);
         }
