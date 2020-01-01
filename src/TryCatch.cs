@@ -28,7 +28,7 @@ namespace CSharpTransformer.src
         {
             var loopNodes = root.DescendantNodes()
                 .OfType<StatementSyntax>()
-                .Where(node => !Common.IsNotPermeableStatement(node)).ToList();
+                .Where(node => !IsNotPermeableStatement(node)).ToList();
             if (loopNodes.Count > 1)
             {
                 loopNodes.RemoveAt(0); // main block
@@ -54,6 +54,20 @@ namespace CSharpTransformer.src
                     "Console.WriteLine(ex); \n" +
                     "} \n";
             return SyntaxFactory.ParseStatement(tryStr);
+        }
+
+        private bool IsNotPermeableStatement(StatementSyntax node)
+        {
+            return (
+                node.IsKind(SyntaxKind.EmptyStatement) ||
+                node.IsKind(SyntaxKind.Block) ||
+                node.IsKind(SyntaxKind.LocalDeclarationStatement) ||
+                node.IsKind(SyntaxKind.GotoStatement) ||
+                node.IsKind(SyntaxKind.LabeledStatement) ||
+                node.IsKind(SyntaxKind.BreakStatement) ||
+                node.IsKind(SyntaxKind.ContinueStatement) ||
+                node.IsKind(SyntaxKind.ReturnStatement)
+            );
         }
     }
 }

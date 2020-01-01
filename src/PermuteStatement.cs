@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -19,63 +20,82 @@ namespace CSharpTransformer.src
             CompilationUnitSyntax root = Common.GetParseUnit(csFile);
             if (root != null)
             {
-                // apply to single place
-                var stmtNodes = root.DescendantNodes().OfType<StatementSyntax>().ToList();
-                for (int place = 0; place < stmtNodes.Count - 1; place++)
+                // apply to all pairs
+                int cnt = 0;
+                var stmtNodes = root.DescendantNodes().OfType<StatementSyntax>()
+                    .Where(node => !IsNotPermeableStatement(node)).ToList();
+                for (int stmti = 0; stmti < stmtNodes.Count - 1; stmti++)
                 {
-                    var modRoot = ApplyToOne(Common.GetParseUnit(csFile), place);
-                    Common.SaveTransformation(modRoot, csFile, Convert.ToString(place + 1));
-                }
-
-                // apply to all place
-                if (stmtNodes.Count > 1)
-                {
-                    root = ApplyToAll(root);
-                    Common.SaveTransformation(root, csFile, Convert.ToString(0));
+                    for (int stmtj = stmti+1; stmtj < stmtNodes.Count; stmtj++)
+                    {
+                        var modRoot = ApplyToAll(Common.GetParseUnit(csFile), stmti, stmtj);
+                        if (modRoot != null)
+                        {
+                            Common.SaveTransformation(modRoot, csFile, Convert.ToString(++cnt));
+                        }
+                    }
                 }
             }
         }
 
-        public CompilationUnitSyntax ApplyToOne(CompilationUnitSyntax root, int p)
+        public CompilationUnitSyntax ApplyToAll(CompilationUnitSyntax root, int i, int j)
         {
-            var statements = root.DescendantNodes().OfType<StatementSyntax>().ToList();
-            if (PermeableStatement(statements[p], statements[p+1]))
+            var statements = root.DescendantNodes().OfType<StatementSyntax>()
+                    .Where(node => !IsNotPermeableStatement(node)).ToList();
+            if (PermeableStatement(statements, i, j))
             {
-                root = root.ReplaceNodes(new[] { statements[p], statements[p+1] },
-                    (original, _) => original == statements[p] ? statements[p+1] : statements[p]);
+                var modRoot = root.ReplaceNodes(new[] { statements[i], statements[j] },
+                    (original, _) => original == statements[i] ? statements[j] : statements[i]);
+                return modRoot;
             }
-            return root;
+            return null;
         }
 
-        public CompilationUnitSyntax ApplyToAll(CompilationUnitSyntax root)
+        private bool PermeableStatement(List<StatementSyntax> statements, int i, int j)
         {
-            var statements = root.DescendantNodes().OfType<StatementSyntax>().ToList();
-            for (int i = 0, j = 1; i < statements.Count - 1; i++, j++)
+            var stmti = statements[i];
+            var stmtj = statements[j];
+            if (stmti.Parent == stmtj.Parent)
             {
-                if (PermeableStatement(statements[i], statements[j]))
+                var iIdentifiers = stmti.DescendantTokens()
+                    .Where(x => x.IsKind(SyntaxKind.IdentifierToken))
+                    .Select(x => x.ToString()).ToList();
+                var jIdentifiers = stmtj.DescendantTokens()
+                    .Where(x => x.IsKind(SyntaxKind.IdentifierToken))
+                    .Select(x => x.ToString()).ToList();
+                if (!iIdentifiers.Intersect(jIdentifiers).Any()
+                    && !jIdentifiers.Intersect(iIdentifiers).Any())
                 {
-                    root = root.ReplaceNodes(new[] { statements[i], statements[j] },
-                        (original, _) => original == statements[i] ? statements[j] : statements[i]);
-                    statements = root.DescendantNodes().OfType<StatementSyntax>().ToList();
-                }
-            }
-            return root;
-        }
-
-        private bool PermeableStatement(StatementSyntax stmti, StatementSyntax stmtj)
-        {
-            if (stmti.Parent == stmtj.Parent
-                && !(Common.IsNotPermeableStatement(stmti)
-                || Common.IsNotPermeableStatement(stmtj)))
-            {
-                var iIdentifiers = stmti.DescendantTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).Select(x => x.ToString()).ToList();
-                var jIdentifiers = stmtj.DescendantTokens().Where(x => x.IsKind(SyntaxKind.IdentifierToken)).Select(x => x.ToString()).ToList();
-                if (!iIdentifiers.Intersect(jIdentifiers).Any() && !jIdentifiers.Intersect(iIdentifiers).Any())
-                {
+                    for (int b = i + 1; b < j; b++)
+                    {
+                        var stmtb = statements[b];
+                        var bIdentifiers = stmtb.DescendantTokens()
+                            .Where(x => x.IsKind(SyntaxKind.IdentifierToken))
+                            .Select(x => x.ToString()).ToList();
+                        if (iIdentifiers.Intersect(bIdentifiers).Any()
+                            || bIdentifiers.Intersect(iIdentifiers).Any()
+                            || jIdentifiers.Intersect(bIdentifiers).Any()
+                            || bIdentifiers.Intersect(jIdentifiers).Any())
+                        {
+                            return false;
+                        }
+                    }
                     return true;
                 }
             }
             return false;
+        }
+
+        private bool IsNotPermeableStatement(StatementSyntax node)
+        {
+            return (
+                node.IsKind(SyntaxKind.EmptyStatement) ||
+                node.IsKind(SyntaxKind.GotoStatement) ||
+                node.IsKind(SyntaxKind.LabeledStatement) ||
+                node.IsKind(SyntaxKind.BreakStatement) ||
+                node.IsKind(SyntaxKind.ContinueStatement) ||
+                node.IsKind(SyntaxKind.ReturnStatement)
+            );
         }
     }
 }
