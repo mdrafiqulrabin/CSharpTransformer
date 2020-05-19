@@ -21,7 +21,7 @@ namespace CSharpTransformer.src
             {
                 var locateVariables = new LocateVariables();
                 locateVariables.Visit(orgRoot);
-                HashSet<SyntaxToken> variableNodes = locateVariables.GetVariableList();
+                HashSet<String> variableNodes = locateVariables.GetVariableList();
                 if (variableNodes.Count > 1)
                 {
                     ApplyToPlace(csFile, orgRoot, variableNodes, false);
@@ -31,13 +31,16 @@ namespace CSharpTransformer.src
         }
 
         public void ApplyToPlace(String csFile, CompilationUnitSyntax orgRoot,
-            HashSet<SyntaxToken> variableNodes, bool singlePlace)
+            HashSet<String> variableNodes, bool singlePlace)
         {
-            int variableId = 0;
-            CompilationUnitSyntax modRoot = orgRoot;
-            foreach (var oldVariable in variableNodes)
+            int variableId = 0, programId = 0;
+            while (variableNodes.Contains(@"var" + variableId))
             {
-                String oldVariablename = oldVariable.ToString();
+                variableId++;
+            }
+            CompilationUnitSyntax modRoot = orgRoot;
+            foreach (var oldVariablename in variableNodes)
+            {
                 String newVariablename = @"var" + variableId;
                 var variableRenaming = new ApplyVariableRenaming(oldVariablename, newVariablename);
                 if (singlePlace)
@@ -45,10 +48,13 @@ namespace CSharpTransformer.src
                     modRoot = Common.GetParseUnit(csFile);
                 }
                 modRoot = (CompilationUnitSyntax)variableRenaming.Visit(modRoot);
-                variableId++;
+                programId++;
                 if (singlePlace)
                 {
-                    Common.SaveTransformation(modRoot, csFile, Convert.ToString(variableId));
+                    Common.SaveTransformation(modRoot, csFile, Convert.ToString(programId));
+                } else
+                {
+                    variableId++;
                 }
             }
             if (!singlePlace)
@@ -59,16 +65,16 @@ namespace CSharpTransformer.src
 
         public class LocateVariables : CSharpSyntaxWalker
         {
-            private HashSet<SyntaxToken> mVariableNodes;
+            private HashSet<String> mVariableNodes;
 
-            public HashSet<SyntaxToken> GetVariableList()
+            public HashSet<String> GetVariableList()
             {
                 return mVariableNodes;
             }
 
             public LocateVariables() : base(SyntaxWalkerDepth.Token)
             {
-                mVariableNodes = new HashSet<SyntaxToken>();
+                mVariableNodes = new HashSet<String>();
             }
 
             public override void Visit(SyntaxNode node)
@@ -82,7 +88,7 @@ namespace CSharpTransformer.src
                     && (token.Parent.IsKind(SyntaxKind.Parameter)
                     || token.Parent.IsKind(SyntaxKind.VariableDeclarator)))
                 {
-                    mVariableNodes.Add(token);
+                    mVariableNodes.Add(token.ToString());
 
                 }
                 base.VisitToken(token);
