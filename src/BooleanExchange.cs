@@ -85,7 +85,11 @@ namespace CSharpTransformer.src
                     if (vds.Type.ToString().ToLower().Equals("bool")
                         || vds.Type.ToString().ToLower().Equals("boolean"))
                     {
-                        mBooleanNodes.Add(token);
+                        var boolVal = ((VariableDeclaratorSyntax)token.Parent).Initializer.Value.ToString().ToLower();
+                        if (boolVal.Equals("true") || boolVal.Equals("false"))
+                        {
+                            mBooleanNodes.Add(token);
+                        }
                     }
                 }
                 base.VisitToken(token);
