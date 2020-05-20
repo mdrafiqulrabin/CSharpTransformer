@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -34,7 +35,8 @@ namespace CSharpTransformer.src
                 {
                     SyntaxList<StatementSyntax> mstmt = mbody.Statements;
                     int place = new Random().Next(0, mstmt.Count + 1);
-                    StatementSyntax unusedStr = (StatementSyntax) getUnusedStatement();
+                    StatementSyntax unusedStr = (StatementSyntax) getUnusedStatement(root);
+                    if (unusedStr == null) return null;
                     mstmt = mstmt.Insert(place, unusedStr);
                     mbody = mbody.WithStatements(mstmt);
                     return root.ReplaceNode(methodSyntax, methodSyntax.WithBody(mbody));
@@ -43,11 +45,16 @@ namespace CSharpTransformer.src
             return root;
         }
 
-        private StatementSyntax getUnusedStatement()
+        private StatementSyntax getUnusedStatement(CompilationUnitSyntax root)
         {
-            String timestamp = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss:fff");
-            String unusedStr = "String dummy_timestamp = \"" + timestamp + "\";\n";
-            return SyntaxFactory.ParseStatement(unusedStr);
+            var variableNames = root.DescendantNodes().OfType<VariableDeclaratorSyntax>().Select(v => v.Identifier.Text)
+                .Concat(root.DescendantNodes().OfType<ParameterSyntax>().Select(p => p.Identifier.Text)).ToArray();
+            if (!variableNames.Contains(@"debug"))
+            {
+                String unusedStr = "bool debug = true;\n";
+                return SyntaxFactory.ParseStatement(unusedStr);
+            }
+            return null;
         }
     }
 }
