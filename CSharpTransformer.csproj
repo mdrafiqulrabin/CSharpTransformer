@@ -126,7 +126,7 @@
     <Compile Include="src\PermuteStatement.cs" />
     <Compile Include="src\Common.cs" />
     <Compile Include="src\UnusedStatement.cs" />
-    <Compile Include="src\UnreachableStatement.cs" />
+    <Compile Include="src\LogStatement.cs" />
     <Compile Include="src\TryCatch.cs" />
   </ItemGroup>
   <ItemGroup>

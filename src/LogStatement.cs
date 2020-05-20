@@ -6,11 +6,11 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CSharpTransformer.src
 {
-    public class UnreachableStatement
+    public class LogStatement
     {
-        public UnreachableStatement()
+        public LogStatement()
         {
-            //Console.WriteLine("\n[ UnreachableStatement ]\n");
+            //Console.WriteLine("\n[ LogStatement ]\n");
         }
 
         public void InspectSourceCode(String csFile)
@@ -33,9 +33,9 @@ namespace CSharpTransformer.src
                 if (mbody != null && mbody.Statements.Count > 0)
                 {
                     SyntaxList<StatementSyntax> mstmt = mbody.Statements;
-                    int place = new Random().Next(0, mstmt.Count + 1);
-                    StatementSyntax unreachableStr = (StatementSyntax)getUnreachableStatement();
-                    mstmt = mstmt.Insert(place, unreachableStr);
+                    if (mstmt.ElementAt(0).ToString().Contains("Console.WriteLine")) return root;
+                    StatementSyntax logStr = (StatementSyntax)getLogStatement();
+                    mstmt = mstmt.Insert(0, logStr); //beginning of stmt
                     mbody = mbody.WithStatements(mstmt);
                     return root.ReplaceNode(methodSyntax, methodSyntax.WithBody(mbody));
                 }
@@ -43,12 +43,10 @@ namespace CSharpTransformer.src
             return root;
         }
 
-        private StatementSyntax getUnreachableStatement()
+        private StatementSyntax getLogStatement()
         {
-            String unreachableStr = "if(false){" +
-                    "\n System.Console.WriteLine(\"an unreachable statement\");" +
-                    "\n }\n";
-            return SyntaxFactory.ParseStatement(unreachableStr);
+            String logStr = "Console.WriteLine(\"Executing method:\");\n";
+            return SyntaxFactory.ParseStatement(logStr);
         }
     }
 }

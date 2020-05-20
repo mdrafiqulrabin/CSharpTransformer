@@ -38,7 +38,7 @@ namespace CSharpTransformer.src
                     new SwitchConditional().InspectSourceCode(csFile);
                     new PermuteStatement().InspectSourceCode(csFile);
                     new UnusedStatement().InspectSourceCode(csFile);
-                    new UnreachableStatement().InspectSourceCode(csFile);
+                    new LogStatement().InspectSourceCode(csFile);
                     new TryCatch().InspectSourceCode(csFile);
                 }
                 catch (Exception ex)
