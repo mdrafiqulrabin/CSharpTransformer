@@ -32,10 +32,10 @@ namespace CSharpTransformer.src
             {
                 try
                 {
-                    new RenameVariable().InspectSourceCode(csFile);
+                    new VariableRenaming().InspectSourceCode(csFile);
                     new BooleanExchange().InspectSourceCode(csFile);
                     new LoopExchange().InspectSourceCode(csFile);
-                    new SwitchConditional().InspectSourceCode(csFile);
+                    new SwitchToIf().InspectSourceCode(csFile);
                     new PermuteStatement().InspectSourceCode(csFile);
                     new UnusedStatement().InspectSourceCode(csFile);
                     new LogStatement().InspectSourceCode(csFile);

@@ -119,9 +119,9 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="src\ASTExplorer.cs" />
-    <Compile Include="src\RenameVariable.cs" />
+    <Compile Include="src\VariableRenaming.cs" />
     <Compile Include="src\LoopExchange.cs" />
-    <Compile Include="src\SwitchConditional.cs" />
+    <Compile Include="src\SwitchToIf.cs" />
     <Compile Include="src\BooleanExchange.cs" />
     <Compile Include="src\PermuteStatement.cs" />
     <Compile Include="src\Common.cs" />

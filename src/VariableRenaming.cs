@@ -6,11 +6,11 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CSharpTransformer.src
 {
-    public class RenameVariable
+    public class VariableRenaming
     {
-        public RenameVariable()
+        public VariableRenaming()
         {
-            //Console.WriteLine("\n[ RenameVariable ]\n");
+            //Console.WriteLine("\n[ VariableRenaming ]\n");
         }
 
         public void InspectSourceCode(String csFile)

@@ -24,11 +24,16 @@ namespace CSharpTransformer.src
                         || node.IsKind(SyntaxKind.WhileStatement))).ToList();
 
                 // apply to single place
+                int programId = 0;
                 for (int place = 0; place < loopNodes.Count; place++)
                 {
                     var loopNode = loopNodes.ElementAt(place);
                     var modRoot = ReplaceLoopNode(root, loopNode);
-                    Common.SaveTransformation(modRoot, csFile, Convert.ToString(place + 1));
+                    if (modRoot != null)
+                    {
+                        programId++;
+                        Common.SaveTransformation(modRoot, csFile, Convert.ToString(programId));
+                    }
                 }
 
                 // apply to all place

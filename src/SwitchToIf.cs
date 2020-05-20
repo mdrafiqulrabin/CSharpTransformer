@@ -8,11 +8,11 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 namespace CSharpTransformer.src
 {
-    public class SwitchConditional
+    public class SwitchToIf
     {
-        public SwitchConditional()
+        public SwitchToIf()
         {
-            //Console.WriteLine("\n[ SwitchConditional ]\n");
+            //Console.WriteLine("\n[ SwitchToIf ]\n");
         }
 
         public void InspectSourceCode(String csFile)
@@ -28,7 +28,7 @@ namespace CSharpTransformer.src
                 for (int place = 0; place < switchNodes.Count; place++)
                 {
                     var switchNode = switchNodes.ElementAt(place);
-                    var modSwitchNode = SwitchToConditional(switchNode);
+                    var modSwitchNode = ApplySwitchToIf(switchNode);
                     if (modSwitchNode != null)
                     {
                         programId++;
@@ -44,7 +44,7 @@ namespace CSharpTransformer.src
                     for (int place = 0; place < switchNodes.Count; place++)
                     {
                         var switchNode = remSwitchNodes.ElementAt(0); //as switch type change
-                        var modSwitchNode = SwitchToConditional(switchNode);
+                        var modSwitchNode = ApplySwitchToIf(switchNode);
                         if (modSwitchNode != null)
                         {
                             root = root.ReplaceNode(switchNode, modSwitchNode);
@@ -56,7 +56,7 @@ namespace CSharpTransformer.src
             }
         }
 
-        private static IfStatementSyntax SwitchToConditional(SwitchStatementSyntax node)
+        private static IfStatementSyntax ApplySwitchToIf(SwitchStatementSyntax node)
         {
             List<IfStatementSyntax> allIfStatementSyntax = new List<IfStatementSyntax>();
             ElseClauseSyntax lastElseClauseSyntax = null;

@@ -34,7 +34,7 @@ namespace CSharpTransformer.src
         public void ApplyToPlace(String csFile, CompilationUnitSyntax orgRoot,
             HashSet<SyntaxToken> booleanNodes, bool singlePlace)
         {
-            int placeId = 0;
+            int programId = 0;
             CompilationUnitSyntax modRoot = orgRoot;
             foreach (var booleanNode in booleanNodes)
             {
@@ -46,13 +46,13 @@ namespace CSharpTransformer.src
                 modRoot = (CompilationUnitSyntax)booleanExchange.Visit(modRoot);
                 if (singlePlace)
                 {
-                    placeId++;
-                    Common.SaveTransformation(modRoot, csFile, Convert.ToString(placeId));
+                    programId++;
+                    Common.SaveTransformation(modRoot, csFile, Convert.ToString(programId));
                 }
             }
             if (!singlePlace)
             {
-                Common.SaveTransformation(modRoot, csFile, Convert.ToString(placeId));
+                Common.SaveTransformation(modRoot, csFile, Convert.ToString(0));
             }
         }
 
@@ -85,10 +85,13 @@ namespace CSharpTransformer.src
                     if (vds.Type.ToString().ToLower().Equals("bool")
                         || vds.Type.ToString().ToLower().Equals("boolean"))
                     {
-                        var boolVal = ((VariableDeclaratorSyntax)token.Parent).Initializer.Value.ToString().ToLower();
-                        if (boolVal.Equals("true") || boolVal.Equals("false"))
+                        if (((VariableDeclaratorSyntax)token.Parent).Initializer != null)
                         {
-                            mBooleanNodes.Add(token);
+                            var boolVal = ((VariableDeclaratorSyntax)token.Parent).Initializer.Value.ToString().ToLower();
+                            if (boolVal.Equals("true") || boolVal.Equals("false"))
+                            {
+                                mBooleanNodes.Add(token);
+                            }
                         }
                     }
                 }
