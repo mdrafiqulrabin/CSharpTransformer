@@ -26,21 +26,21 @@ namespace CSharpTransformer.src
 
         private CompilationUnitSyntax applyTransformation(CompilationUnitSyntax root)
         {
-            var loopNodes = root.DescendantNodes()
-                .OfType<StatementSyntax>()
-                .Where(node => !IsNotPermeableStatement(node)).ToList();
-            if (loopNodes.Count > 1)
+            var tryNodes = root.DescendantNodes().OfType<TryStatementSyntax>().ToList();
+            var methodCalls = root.DescendantNodes().OfType<InvocationExpressionSyntax>().ToList();
+            if (tryNodes.Count > 0 || methodCalls.Count == 0) return null;
+
+            var loopNodes = root.DescendantNodes().OfType<StatementSyntax>()
+                .Where(node => IsTryCatchApplicable(node)).ToList();
+
+            if (loopNodes.Count > 0)
             {
-                loopNodes.RemoveAt(0); // main block
                 int place = new Random().Next(0, loopNodes.Count); // overflow +1
                 StatementSyntax tryStr = getTryCatch(loopNodes.ElementAt(place));
                 root = root.ReplaceNode(loopNodes.ElementAt(place), tryStr);
+                return root;
             }
-            else
-            {
-                //TODO, i.e. {int r = result(); return r;}
-            }
-            return root;
+            return null;
         }
 
         private StatementSyntax getTryCatch(StatementSyntax stmt)
@@ -56,9 +56,10 @@ namespace CSharpTransformer.src
             return SyntaxFactory.ParseStatement(tryStr);
         }
 
-        private bool IsNotPermeableStatement(StatementSyntax node)
+        private bool IsTryCatchApplicable(StatementSyntax node)
         {
-            return (
+            var methodCalls = node.DescendantNodes().OfType<InvocationExpressionSyntax>().ToList();
+            bool isPermeableStatement = !(
                 node.IsKind(SyntaxKind.EmptyStatement) ||
                 node.IsKind(SyntaxKind.Block) ||
                 node.IsKind(SyntaxKind.LocalDeclarationStatement) ||
@@ -68,6 +69,7 @@ namespace CSharpTransformer.src
                 node.IsKind(SyntaxKind.ContinueStatement) ||
                 node.IsKind(SyntaxKind.ReturnStatement)
             );
+            return methodCalls.Count > 0 && isPermeableStatement;
         }
     }
 }

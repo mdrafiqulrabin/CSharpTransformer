@@ -61,6 +61,7 @@ namespace CSharpTransformer.src
 
         public static bool CheckTransformation(CompilationUnitSyntax modRoot, string csFile)
         {
+            if (modRoot == null) return false;
             CompilationUnitSyntax orgRoot = Common.GetParseUnit(csFile);
             String orgTxt = Common.RemoveSpaces(orgRoot.ToString());
             String traTxt = Common.RemoveSpaces(modRoot.ToString());
