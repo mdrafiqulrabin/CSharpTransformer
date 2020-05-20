@@ -21,31 +21,62 @@ namespace CSharpTransformer.src
             if (root != null)
             {
                 // apply to all pairs
-                int cnt = 0;
-                var stmtNodes = root.DescendantNodes().OfType<StatementSyntax>()
-                    .Where(node => !IsNotPermeableStatement(node)).ToList();
-                for (int stmti = 0; stmti < stmtNodes.Count - 1; stmti++)
+                int programId = 0;
+                var basicBlockStmts = LocateBasicBlockStatements(root);
+                for (int k = 0; k < basicBlockStmts.Count; k++)
                 {
-                    for (int stmtj = stmti+1; stmtj < stmtNodes.Count; stmtj++)
+                    var stmtNodes = basicBlockStmts.ElementAt(k);
+                    for (int i = 0; i < stmtNodes.Count - 1; i++)
                     {
-                        var modRoot = ApplyToAll(Common.GetParseUnit(csFile), stmti, stmtj);
-                        if (modRoot != null)
+                        for (int j = i + 1; j < stmtNodes.Count; j++)
                         {
-                            Common.SaveTransformation(modRoot, csFile, Convert.ToString(++cnt));
+                            var modRoot = applyTransformation(csFile, k, i, j);
+                            if (modRoot != null)
+                            {
+                                programId++;
+                                Common.SaveTransformation(modRoot, csFile, Convert.ToString(programId));
+                            }
                         }
                     }
                 }
             }
         }
 
-        public CompilationUnitSyntax ApplyToAll(CompilationUnitSyntax root, int i, int j)
+        public List<List<StatementSyntax>> LocateBasicBlockStatements(CompilationUnitSyntax root)
         {
-            var statements = root.DescendantNodes().OfType<StatementSyntax>()
-                    .Where(node => !IsNotPermeableStatement(node)).ToList();
-            if (PermeableStatement(statements, i, j))
+            var innerStatements = new List<StatementSyntax>();
+            var basicBlockStmts = new List<List<StatementSyntax>>();
+            var allStatements = root.DescendantNodes().OfType<StatementSyntax>().ToList();
+
+            foreach(var stmt in allStatements)
             {
-                var modRoot = root.ReplaceNodes(new[] { statements[i], statements[j] },
-                    (original, _) => original == statements[i] ? statements[j] : statements[i]);
+                if(stmt.IsKind(SyntaxKind.ExpressionStatement)
+                    && stmt.DescendantNodes().OfType<InvocationExpressionSyntax>().ToList().Count == 0
+                    && IsPermuteApplicable(stmt))
+                {
+                    innerStatements.Add(stmt);
+                } else
+                {
+                    if (innerStatements.Count > 1)
+                    {
+                        basicBlockStmts.Add(new List<StatementSyntax>(innerStatements));
+                    }
+                    innerStatements.Clear();
+                }
+            }
+
+            return basicBlockStmts;
+        }
+
+        public CompilationUnitSyntax applyTransformation(String csFile, int k, int i, int j)
+        {
+            var root = Common.GetParseUnit(csFile);
+            var basicBlockStmts = LocateBasicBlockStatements(root);
+            var innerStatements = basicBlockStmts.ElementAt(k);
+            if (PermeableStatement(innerStatements, i, j))
+            {
+                var modRoot = root.ReplaceNodes(new[] { innerStatements[i], innerStatements[j] },
+                    (original, _) => original == innerStatements[i] ? innerStatements[j] : innerStatements[i]);
                 return modRoot;
             }
             return null;
@@ -86,9 +117,9 @@ namespace CSharpTransformer.src
             return false;
         }
 
-        private bool IsNotPermeableStatement(StatementSyntax node)
+        private bool IsPermuteApplicable(StatementSyntax node)
         {
-            return (
+            return !(
                 node.IsKind(SyntaxKind.EmptyStatement) ||
                 node.IsKind(SyntaxKind.GotoStatement) ||
                 node.IsKind(SyntaxKind.LabeledStatement) ||
