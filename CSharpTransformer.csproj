@@ -128,6 +128,7 @@
     <Compile Include="src\UnusedStatement.cs" />
     <Compile Include="src\LogStatement.cs" />
     <Compile Include="src\TryCatch.cs" />
+    <Compile Include="src\RemoveComment.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

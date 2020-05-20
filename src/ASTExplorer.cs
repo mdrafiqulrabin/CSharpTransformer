@@ -37,6 +37,7 @@ namespace CSharpTransformer.src
                     new LoopExchange().InspectSourceCode(csFile);
                     new SwitchToIf().InspectSourceCode(csFile);
                     new PermuteStatement().InspectSourceCode(csFile);
+                    new RemoveComment().InspectSourceCode(csFile);
                     new UnusedStatement().InspectSourceCode(csFile);
                     new LogStatement().InspectSourceCode(csFile);
                     new TryCatch().InspectSourceCode(csFile);
