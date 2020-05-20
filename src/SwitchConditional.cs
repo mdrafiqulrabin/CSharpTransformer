@@ -24,11 +24,17 @@ namespace CSharpTransformer.src
                 var switchNodes = root.DescendantNodes().OfType<SwitchStatementSyntax>().ToList();
 
                 // apply to single place
+                int programId = 0;
                 for (int place = 0; place < switchNodes.Count; place++)
                 {
                     var switchNode = switchNodes.ElementAt(place);
-                    var modRoot = root.ReplaceNode(switchNode, SwitchToConditional(switchNode));
-                    Common.SaveTransformation(modRoot, csFile, Convert.ToString(place + 1));
+                    var modSwitchNode = SwitchToConditional(switchNode);
+                    if (modSwitchNode != null)
+                    {
+                        programId++;
+                        var modRoot = root.ReplaceNode(switchNode, modSwitchNode);
+                        Common.SaveTransformation(modRoot, csFile, Convert.ToString(programId));
+                    }
                 }
 
                 // apply to all place
@@ -38,8 +44,12 @@ namespace CSharpTransformer.src
                     for (int place = 0; place < switchNodes.Count; place++)
                     {
                         var switchNode = remSwitchNodes.ElementAt(0); //as switch type change
-                        root = root.ReplaceNode(switchNode, SwitchToConditional(switchNode));
-                        remSwitchNodes = root.DescendantNodes().OfType<SwitchStatementSyntax>().ToList();
+                        var modSwitchNode = SwitchToConditional(switchNode);
+                        if (modSwitchNode != null)
+                        {
+                            root = root.ReplaceNode(switchNode, modSwitchNode);
+                            remSwitchNodes = root.DescendantNodes().OfType<SwitchStatementSyntax>().ToList();
+                        }
                     }
                     Common.SaveTransformation(root, csFile, Convert.ToString(0));
                 }
@@ -118,6 +128,7 @@ namespace CSharpTransformer.src
             IfStatementSyntax mIfStatementSyntax = null;
             if (allIfStatementSyntax.Count == 0)
             {
+                /*
                 ExpressionSyntax defaultCondition = SyntaxFactory.ParseExpression(switchStatementSyntax.Expression + "==" + switchStatementSyntax.Expression);
                 StatementSyntax defaultStatement = SyntaxFactory.ParseStatement("{\n}"); //empty
                 if (lastElseClauseSyntax != null) //only default
@@ -125,6 +136,8 @@ namespace CSharpTransformer.src
                     defaultStatement = lastElseClauseSyntax.Statement;
                 }
                 return SyntaxFactory.IfStatement(defaultCondition, defaultStatement);
+                */
+                return null;
             }
             else
             {
