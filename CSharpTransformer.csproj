@@ -129,6 +129,7 @@
     <Compile Include="src\LogStatement.cs" />
     <Compile Include="src\TryCatch.cs" />
     <Compile Include="src\RemoveComment.cs" />
+    <Compile Include="src\ReorderCondition.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
