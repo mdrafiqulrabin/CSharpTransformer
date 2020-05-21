@@ -12,11 +12,16 @@ namespace CSharpTransformer
          * separate folder for each refactoring will be created in 'transforms' folder
          */
 
-        static readonly String inpPath = "/Users/mdrafiqulrabin/Projects/TNPA/dataset/csharp/methods/";
-        static readonly String outPath = "/Users/mdrafiqulrabin/Projects/TNPA/dataset/csharp/transforms/";
+        static String inpPath = "/Users/mdrafiqulrabin/Desktop/RA/TNPA/CSharpAnalysis/DummyData/methods/";
+        static String outPath = "/Users/mdrafiqulrabin/Desktop/RA/TNPA/CSharpAnalysis/DummyData/transforms/";
 
         public static void Main(string[] args)
         {
+            if (args.Length == 2)
+            {
+                inpPath = args[0];
+                outPath = args[1];
+            }
             new ASTExplorer(inpPath, outPath).Call();
         }
     }
