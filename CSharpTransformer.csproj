@@ -130,6 +130,7 @@
     <Compile Include="src\TryCatch.cs" />
     <Compile Include="src\RemoveComment.cs" />
     <Compile Include="src\ReorderCondition.cs" />
+    <Compile Include="src\RemoveEmptyStatement.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

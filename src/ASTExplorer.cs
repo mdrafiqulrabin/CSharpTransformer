@@ -42,6 +42,7 @@ namespace CSharpTransformer.src
                     new UnusedStatement().InspectSourceCode(csFile);
                     new LogStatement().InspectSourceCode(csFile);
                     new TryCatch().InspectSourceCode(csFile);
+                    new RemoveEmptyStatement().InspectSourceCode(csFile);
                 }
                 catch (Exception ex)
                 {
