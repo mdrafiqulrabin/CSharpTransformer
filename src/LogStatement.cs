@@ -19,12 +19,12 @@ namespace CSharpTransformer.src
             CompilationUnitSyntax root = Common.GetParseUnit(csFile);
             if (root != null)
             {
-                root = applyTransformation(root);
+                root = ApplyTransformation(root);
                 Common.SaveTransformation(root, csFile, Convert.ToString(1));
             }
         }
 
-        private CompilationUnitSyntax applyTransformation(CompilationUnitSyntax root)
+        private CompilationUnitSyntax ApplyTransformation(CompilationUnitSyntax root)
         {
             MethodDeclarationSyntax methodSyntax = root.DescendantNodes().OfType<MethodDeclarationSyntax>().ToList().First();
             if (methodSyntax != null)
@@ -34,7 +34,7 @@ namespace CSharpTransformer.src
                 {
                     SyntaxList<StatementSyntax> mstmt = mbody.Statements;
                     if (mstmt.ElementAt(0).ToString().Contains("Console.WriteLine")) return root;
-                    StatementSyntax logStr = (StatementSyntax)getLogStatement();
+                    StatementSyntax logStr = (StatementSyntax)GetLogStatement();
                     mstmt = mstmt.Insert(0, logStr); //beginning of stmt
                     mbody = mbody.WithStatements(mstmt);
                     return root.ReplaceNode(methodSyntax, methodSyntax.WithBody(mbody));
@@ -43,7 +43,7 @@ namespace CSharpTransformer.src
             return root;
         }
 
-        private StatementSyntax getLogStatement()
+        private StatementSyntax GetLogStatement()
         {
             String logStr = "Console.WriteLine(\"Executing method:\");\n";
             return SyntaxFactory.ParseStatement(logStr);

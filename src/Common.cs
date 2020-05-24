@@ -49,7 +49,8 @@ namespace CSharpTransformer.src
             {
                 SyntaxTree tree = Common.GetSyntaxTree(csFile);
                 root = (CompilationUnitSyntax)tree.GetRoot();
-            } catch (Exception ex)
+            }
+            catch (Exception ex)
             {
                 Console.WriteLine("Exception: " + csFile);
                 String error_dir = Common.mSavePath + "cs_parser_error.txt";
@@ -73,7 +74,7 @@ namespace CSharpTransformer.src
         }
 
         public static void SaveTransformation(CompilationUnitSyntax root,
-            string csFile, string place="")
+            string csFile, string place = "")
         {
             if (Common.CheckTransformation(root, csFile))
             {

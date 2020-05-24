@@ -18,7 +18,7 @@ namespace CSharpTransformer.src
             CompilationUnitSyntax root = Common.GetParseUnit(csFile);
             if (root != null)
             {
-                var modRoot = (CompilationUnitSyntax) new CommentRemoval().Visit(root);
+                var modRoot = (CompilationUnitSyntax)new CommentRemoval().Visit(root);
                 Common.SaveTransformation(modRoot, csFile, Convert.ToString(1));
             }
         }

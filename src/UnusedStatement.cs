@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -20,12 +19,12 @@ namespace CSharpTransformer.src
             CompilationUnitSyntax root = Common.GetParseUnit(csFile);
             if (root != null)
             {
-                root = applyTransformation(root);
+                root = ApplyTransformation(root);
                 Common.SaveTransformation(root, csFile, Convert.ToString(1));
             }
         }
 
-        private CompilationUnitSyntax applyTransformation(CompilationUnitSyntax root)
+        private CompilationUnitSyntax ApplyTransformation(CompilationUnitSyntax root)
         {
             MethodDeclarationSyntax methodSyntax = root.DescendantNodes().OfType<MethodDeclarationSyntax>().ToList().First();
             if (methodSyntax != null)
@@ -35,7 +34,7 @@ namespace CSharpTransformer.src
                 {
                     SyntaxList<StatementSyntax> mstmt = mbody.Statements;
                     int place = new Random().Next(0, mstmt.Count + 1);
-                    StatementSyntax unusedStr = (StatementSyntax) getUnusedStatement(root);
+                    StatementSyntax unusedStr = (StatementSyntax)GetUnusedStatement(root);
                     if (unusedStr == null) return null;
                     mstmt = mstmt.Insert(place, unusedStr);
                     mbody = mbody.WithStatements(mstmt);
@@ -45,7 +44,7 @@ namespace CSharpTransformer.src
             return root;
         }
 
-        private StatementSyntax getUnusedStatement(CompilationUnitSyntax root)
+        private StatementSyntax GetUnusedStatement(CompilationUnitSyntax root)
         {
             var variableNames = root.DescendantNodes().OfType<VariableDeclaratorSyntax>().Select(v => v.Identifier.Text)
                 .Concat(root.DescendantNodes().OfType<ParameterSyntax>().Select(p => p.Identifier.Text)).ToArray();

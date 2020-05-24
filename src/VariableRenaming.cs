@@ -52,7 +52,8 @@ namespace CSharpTransformer.src
                 if (singlePlace)
                 {
                     Common.SaveTransformation(modRoot, csFile, Convert.ToString(programId));
-                } else
+                }
+                else
                 {
                     variableId++;
                 }

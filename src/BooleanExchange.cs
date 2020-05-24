@@ -99,12 +99,13 @@ namespace CSharpTransformer.src
             }
         }
 
-        private static String getNotExpStr(String nodeStr, String nodeRef)
+        private static String GetNotExpStr(String nodeStr, String nodeRef)
         {
             if (nodeStr.Equals("true"))
             {
                 return "false";
-            } else if (nodeStr.Equals("false"))
+            }
+            else if (nodeStr.Equals("false"))
             {
                 return "true";
             }
@@ -139,10 +140,10 @@ namespace CSharpTransformer.src
             public override SyntaxNode Visit(SyntaxNode node)
             {
                 if (node != null && (
-                    (node.IsKind(SyntaxKind.LogicalNotExpression) && node.ToString().Equals("!"+mBooleanNode))
+                    (node.IsKind(SyntaxKind.LogicalNotExpression) && node.ToString().Equals("!" + mBooleanNode))
                     || (node.IsKind(SyntaxKind.IdentifierName) && node.ToString().Equals(mBooleanNode))))
                 {
-                    return SyntaxFactory.ParseExpression(getNotExpStr(node.ToString(),mBooleanNode));
+                    return SyntaxFactory.ParseExpression(GetNotExpStr(node.ToString(), mBooleanNode));
                 }
                 return base.Visit(node);
             }
@@ -168,18 +169,22 @@ namespace CSharpTransformer.src
                     if (declarators.Count != 0)
                     {
                         identifier = ((VariableDeclaratorSyntax)declarators.First()).Identifier.ToString();
-                    } else
+                    }
+                    else
                     {
                         var expressions = node.Ancestors().OfType<AssignmentExpressionSyntax>().ToList();
                         if (expressions.Count != 0)
                         {
-                            if (((AssignmentExpressionSyntax)expressions.First()).Left.IsKind(SyntaxKind.IdentifierName)) {
+                            if (((AssignmentExpressionSyntax)expressions.First()).Left.IsKind(SyntaxKind.IdentifierName))
+                            {
                                 identifier = ((AssignmentExpressionSyntax)expressions.First()).Left.ToString();
-                            } else
+                            }
+                            else
                             {
                                 identifier = ((AssignmentExpressionSyntax)expressions.First()).Right.ToString();
                             }
-                        } else
+                        }
+                        else
                         {
                             /*var equals = node.Ancestors().OfType<BinaryExpressionSyntax>().ToList();
                             if (equals.Count != 0)
@@ -222,13 +227,13 @@ namespace CSharpTransformer.src
                     if (node.IsKind(SyntaxKind.Argument))
                     {
                         //i.e. call(x) --> call(!x)
-                        var argumentListSyntax = SyntaxFactory.ParseArgumentList(getNotExpStr(node.ToString(), mBooleanNode));
+                        var argumentListSyntax = SyntaxFactory.ParseArgumentList(GetNotExpStr(node.ToString(), mBooleanNode));
                         return argumentListSyntax.ChildNodes().First();
                     }
                     else
                     {
                         //i.e. y=x --> y=!x
-                        return SyntaxFactory.ParseExpression(getNotExpStr(node.ToString(), mBooleanNode));
+                        return SyntaxFactory.ParseExpression(GetNotExpStr(node.ToString(), mBooleanNode));
                     }
                 }
                 else if (node != null && node.Parent != null
@@ -238,7 +243,7 @@ namespace CSharpTransformer.src
                 {
                     //i.e. x = call(!x,r(x)) --> x = !(call(!!x,r(!x)))
                     node = new IdentifierNotRewriter(mBooleanNode).Visit(node);
-                    return SyntaxFactory.ParseExpression(getNotExpStr(node.ToString(), mBooleanNode));
+                    return SyntaxFactory.ParseExpression(GetNotExpStr(node.ToString(), mBooleanNode));
                 }
                 else if (node != null && node.Parent != null
                     && node.IsKind(SyntaxKind.EqualsValueClause)
@@ -249,7 +254,7 @@ namespace CSharpTransformer.src
                     //i.e. boolean y = x --> boolean y = !x
                     return ((EqualsValueClauseSyntax)node).Update(
                         ((EqualsValueClauseSyntax)node).EqualsToken,
-                        SyntaxFactory.ParseExpression(getNotExpStr(((EqualsValueClauseSyntax)node).Value.ToString(), mBooleanNode)));
+                        SyntaxFactory.ParseExpression(GetNotExpStr(((EqualsValueClauseSyntax)node).Value.ToString(), mBooleanNode)));
                 }
                 return base.Visit(node);
             }

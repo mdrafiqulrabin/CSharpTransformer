@@ -19,12 +19,12 @@ namespace CSharpTransformer.src
             CompilationUnitSyntax root = Common.GetParseUnit(csFile);
             if (root != null)
             {
-                root = applyTransformation(root);
+                root = ApplyTransformation(root);
                 Common.SaveTransformation(root, csFile, Convert.ToString(1));
             }
         }
 
-        private CompilationUnitSyntax applyTransformation(CompilationUnitSyntax root)
+        private CompilationUnitSyntax ApplyTransformation(CompilationUnitSyntax root)
         {
             var tryNodes = root.DescendantNodes().OfType<TryStatementSyntax>().ToList();
             var methodCalls = root.DescendantNodes().OfType<InvocationExpressionSyntax>().ToList();
@@ -36,14 +36,14 @@ namespace CSharpTransformer.src
             if (loopNodes.Count > 0)
             {
                 int place = new Random().Next(0, loopNodes.Count); // overflow +1
-                StatementSyntax tryStr = getTryCatch(loopNodes.ElementAt(place));
+                StatementSyntax tryStr = GetTryCatch(loopNodes.ElementAt(place));
                 root = root.ReplaceNode(loopNodes.ElementAt(place), tryStr);
                 return root;
             }
             return null;
         }
 
-        private StatementSyntax getTryCatch(StatementSyntax stmt)
+        private StatementSyntax GetTryCatch(StatementSyntax stmt)
         {
             string tryStr = "try \n" +
                     "{ \n" +

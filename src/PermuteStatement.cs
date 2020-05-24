@@ -30,7 +30,7 @@ namespace CSharpTransformer.src
                     {
                         for (int j = i + 1; j < stmtNodes.Count; j++)
                         {
-                            var modRoot = applyTransformation(csFile, k, i, j);
+                            var modRoot = ApplyTransformation(csFile, k, i, j);
                             if (modRoot != null)
                             {
                                 programId++;
@@ -48,14 +48,15 @@ namespace CSharpTransformer.src
             var basicBlockStmts = new List<List<StatementSyntax>>();
             var allStatements = root.DescendantNodes().OfType<StatementSyntax>().ToList();
 
-            foreach(var stmt in allStatements)
+            foreach (var stmt in allStatements)
             {
-                if(stmt.IsKind(SyntaxKind.ExpressionStatement)
+                if (stmt.IsKind(SyntaxKind.ExpressionStatement)
                     && stmt.DescendantNodes().OfType<InvocationExpressionSyntax>().ToList().Count == 0
                     && IsPermuteApplicable(stmt))
                 {
                     innerStatements.Add(stmt);
-                } else
+                }
+                else
                 {
                     if (innerStatements.Count > 1)
                     {
@@ -68,7 +69,7 @@ namespace CSharpTransformer.src
             return basicBlockStmts;
         }
 
-        public CompilationUnitSyntax applyTransformation(String csFile, int k, int i, int j)
+        public CompilationUnitSyntax ApplyTransformation(String csFile, int k, int i, int j)
         {
             var root = Common.GetParseUnit(csFile);
             var basicBlockStmts = LocateBasicBlockStatements(root);
@@ -130,4 +131,3 @@ namespace CSharpTransformer.src
         }
     }
 }
-

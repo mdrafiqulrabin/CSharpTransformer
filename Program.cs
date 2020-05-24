@@ -12,8 +12,8 @@ namespace CSharpTransformer
          * separate folder for each refactoring will be created in 'transforms' folder
          */
 
-        static String inpPath = "/Users/mdrafiqulrabin/Desktop/RA/TNPA/CSharpAnalysis/DummyData/methods/";
-        static String outPath = "/Users/mdrafiqulrabin/Desktop/RA/TNPA/CSharpAnalysis/DummyData/transforms/";
+        static String inpPath = "/Users/rabin/Desktop/RA/DummyData/csharp/methods/";
+        static String outPath = "/Users/rabin/Desktop/RA/DummyData/csharp/transforms/";
 
         public static void Main(string[] args)
         {

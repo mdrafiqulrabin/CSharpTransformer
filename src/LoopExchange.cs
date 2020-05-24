@@ -61,7 +61,8 @@ namespace CSharpTransformer.src
             else if (loopNode.IsKind(SyntaxKind.WhileStatement))
             {
                 return root.ReplaceNode(loopNode, WhileToFor((WhileStatementSyntax)loopNode));
-            } else
+            }
+            else
             {
                 return root;
             }
@@ -84,7 +85,8 @@ namespace CSharpTransformer.src
                     {
                         innerStatements = innerStatements.Add(v);
                     }
-                } else
+                }
+                else
                 {
                     innerStatements = innerStatements.Add(forStatements);
                 }
