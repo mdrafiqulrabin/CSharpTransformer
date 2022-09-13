@@ -9,18 +9,20 @@ namespace CSharpTransformer.src
 {
     public class PermuteStatement
     {
+        private readonly Common mCommon;
+
         public PermuteStatement()
         {
             //Console.WriteLine("\n[ PermuteStatement ]\n");
+            mCommon = new Common();
         }
 
         public void InspectSourceCode(String csFile)
         {
-            Common.SetOutputPath(this, csFile);
-            CompilationUnitSyntax root = Common.GetParseUnit(csFile);
+            String savePath = Common.mRootOutputPath + this.GetType().Name + "/";
+            CompilationUnitSyntax root = mCommon.GetParseUnit(csFile);
             if (root != null)
             {
-                // apply to all pairs
                 int programId = 0;
                 var basicBlockStmts = LocateBasicBlockStatements(root);
                 for (int k = 0; k < basicBlockStmts.Count; k++)
@@ -34,7 +36,7 @@ namespace CSharpTransformer.src
                             if (modRoot != null)
                             {
                                 programId++;
-                                Common.SaveTransformation(modRoot, csFile, Convert.ToString(programId));
+                                mCommon.SaveTransformation(savePath, modRoot, csFile, Convert.ToString(programId));
                             }
                         }
                     }
@@ -42,15 +44,14 @@ namespace CSharpTransformer.src
             }
         }
 
-        public List<List<StatementSyntax>> LocateBasicBlockStatements(CompilationUnitSyntax root)
+        private List<List<StatementSyntax>> LocateBasicBlockStatements(CompilationUnitSyntax root)
         {
             var innerStatements = new List<StatementSyntax>();
             var basicBlockStmts = new List<List<StatementSyntax>>();
             var allStatements = root.DescendantNodes().OfType<StatementSyntax>().ToList();
-
             foreach (var stmt in allStatements)
             {
-                if (stmt.IsKind(SyntaxKind.ExpressionStatement)
+                if ((stmt.IsKind(SyntaxKind.ExpressionStatement) || stmt.IsKind(SyntaxKind.LocalDeclarationStatement))
                     && stmt.DescendantNodes().OfType<InvocationExpressionSyntax>().ToList().Count == 0
                     && IsPermuteApplicable(stmt))
                 {
@@ -65,13 +66,12 @@ namespace CSharpTransformer.src
                     innerStatements.Clear();
                 }
             }
-
             return basicBlockStmts;
         }
 
-        public CompilationUnitSyntax ApplyTransformation(String csFile, int k, int i, int j)
+        private CompilationUnitSyntax ApplyTransformation(String csFile, int k, int i, int j)
         {
-            var root = Common.GetParseUnit(csFile);
+            var root = mCommon.GetParseUnit(csFile);
             var basicBlockStmts = LocateBasicBlockStatements(root);
             var innerStatements = basicBlockStmts.ElementAt(k);
             if (PermeableStatement(innerStatements, i, j))

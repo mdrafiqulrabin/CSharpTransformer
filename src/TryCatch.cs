@@ -8,39 +8,45 @@ namespace CSharpTransformer.src
 {
     public class TryCatch
     {
+        private readonly Common mCommon;
+
         public TryCatch()
         {
             //Console.WriteLine("\n[ TryCatch ]\n");
+            mCommon = new Common();
         }
 
         public void InspectSourceCode(String csFile)
         {
-            Common.SetOutputPath(this, csFile);
-            CompilationUnitSyntax root = Common.GetParseUnit(csFile);
+            String savePath = Common.mRootOutputPath + this.GetType().Name + "/";
+            CompilationUnitSyntax root = mCommon.GetParseUnit(csFile);
             if (root != null)
             {
                 root = ApplyTransformation(root);
-                Common.SaveTransformation(root, csFile, Convert.ToString(1));
+                mCommon.SaveTransformation(savePath, root, csFile, Convert.ToString(1));
             }
         }
 
         private CompilationUnitSyntax ApplyTransformation(CompilationUnitSyntax root)
         {
-            var tryNodes = root.DescendantNodes().OfType<TryStatementSyntax>().ToList();
-            var methodCalls = root.DescendantNodes().OfType<InvocationExpressionSyntax>().ToList();
-            if (tryNodes.Count > 0 || methodCalls.Count == 0) return null;
-
-            var loopNodes = root.DescendantNodes().OfType<StatementSyntax>()
-                .Where(node => IsTryCatchApplicable(node)).ToList();
-
-            if (loopNodes.Count > 0)
+            if (root.Members.Any())
             {
-                int place = new Random().Next(0, loopNodes.Count); // overflow +1
-                StatementSyntax tryStr = GetTryCatch(loopNodes.ElementAt(place));
-                root = root.ReplaceNode(loopNodes.ElementAt(place), tryStr);
-                return root;
+                MemberDeclarationSyntax methodSyntax = (MemberDeclarationSyntax)root.Members.First();
+                var tryNodes = methodSyntax.DescendantNodes().OfType<TryStatementSyntax>().ToList();
+                var methodCalls = methodSyntax.DescendantNodes().OfType<InvocationExpressionSyntax>().ToList();
+                if (tryNodes.Count == 0 || methodCalls.Count > 0)
+                {
+                    var tcNodes = methodSyntax.DescendantNodes().OfType<StatementSyntax>()
+                        .Where(node => IsTryCatchApplicable(node)).ToList();
+                    if (tcNodes.Count > 0)
+                    {
+                        int place = new Random().Next(1, tcNodes.Count);
+                        StatementSyntax tryStr = GetTryCatch(tcNodes.ElementAt(place));
+                        root = root.ReplaceNode(tcNodes.ElementAt(place), tryStr);
+                    }
+                }
             }
-            return null;
+            return root;
         }
 
         private StatementSyntax GetTryCatch(StatementSyntax stmt)
@@ -51,7 +57,7 @@ namespace CSharpTransformer.src
                     "} \n" +
                     "catch (Exception ex) \n" +
                     "{ \n" +
-                    "Console.WriteLine(ex); \n" +
+                    "Console.WriteLine(ex.ToString()); \n" +
                     "} \n";
             return SyntaxFactory.ParseStatement(tryStr);
         }

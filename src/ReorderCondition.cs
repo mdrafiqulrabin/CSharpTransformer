@@ -9,21 +9,23 @@ namespace CSharpTransformer.src
 {
     public class ReorderCondition
     {
+        private readonly Common mCommon;
+
         public ReorderCondition()
         {
             //Console.WriteLine("\n[ ReorderCondition ]\n");
+            mCommon = new Common();
         }
 
         public void InspectSourceCode(String csFile)
         {
-            Common.SetOutputPath(this, csFile);
-            CompilationUnitSyntax root = Common.GetParseUnit(csFile);
+            String savePath = Common.mRootOutputPath + this.GetType().Name + "/";
+            CompilationUnitSyntax root = mCommon.GetParseUnit(csFile);
             if (root != null)
             {
                 var binaryExNodes = root.DescendantNodes().OfType<BinaryExpressionSyntax>()
                     .Where(IsReorderApplicable).ToList();
 
-                // apply to single place
                 int programId = 0;
                 for (int place = 0; place < binaryExNodes.Count; place++)
                 {
@@ -33,30 +35,13 @@ namespace CSharpTransformer.src
                     {
                         programId++;
                         var modRoot = root.ReplaceNode(binExNode, modBinExNode);
-                        Common.SaveTransformation(modRoot, csFile, Convert.ToString(programId));
+                        mCommon.SaveTransformation(savePath, modRoot, csFile, Convert.ToString(programId));
                     }
-                }
-
-                // apply to all place
-                if (binaryExNodes.Count > 1)
-                {
-                    for (int place = 0; place < binaryExNodes.Count; place++)
-                    {
-                        var binExNode = binaryExNodes.ElementAt(place);
-                        var modBinExNode = ApplyReorderCondition(binExNode);
-                        if (modBinExNode != null)
-                        {
-                            root = root.ReplaceNode(binExNode, modBinExNode);
-                            binaryExNodes = root.DescendantNodes().OfType<BinaryExpressionSyntax>()
-                                .Where(IsReorderApplicable).ToList();
-                        }
-                    }
-                    Common.SaveTransformation(root, csFile, Convert.ToString(0));
                 }
             }
         }
 
-        private static BinaryExpressionSyntax ApplyReorderCondition(BinaryExpressionSyntax node)
+        private BinaryExpressionSyntax ApplyReorderCondition(BinaryExpressionSyntax node)
         {
             SyntaxKind newSyntaxKind;
             switch (node.Kind())

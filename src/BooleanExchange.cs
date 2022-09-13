@@ -9,56 +9,48 @@ namespace CSharpTransformer.src
 {
     public class BooleanExchange
     {
+        private readonly Common mCommon;
+
         public BooleanExchange()
         {
             //Console.WriteLine("\n[ BooleanExchange ]\n");
+            mCommon = new Common();
         }
 
         public void InspectSourceCode(String csFile)
         {
-            Common.SetOutputPath(this, csFile);
-            CompilationUnitSyntax orgRoot = Common.GetParseUnit(csFile);
+            String savePath = Common.mRootOutputPath + this.GetType().Name + "/";
+            CompilationUnitSyntax orgRoot = mCommon.GetParseUnit(csFile);
             if (orgRoot != null)
             {
                 var locateBooleans = new LocateBooleans();
                 locateBooleans.Visit(orgRoot);
                 HashSet<SyntaxToken> booleanNodes = locateBooleans.GetBooleanList();
-                if (booleanNodes.Count > 1)
+                if (booleanNodes.Count > 0)
                 {
-                    ApplyToPlace(csFile, orgRoot, booleanNodes, false);
+                    ApplyToPlace(savePath, csFile, orgRoot, booleanNodes);
                 }
-                ApplyToPlace(csFile, orgRoot, booleanNodes, true);
             }
         }
 
-        public void ApplyToPlace(String csFile, CompilationUnitSyntax orgRoot,
-            HashSet<SyntaxToken> booleanNodes, bool singlePlace)
+        private void ApplyToPlace(String savePath, String csFile,
+            CompilationUnitSyntax orgRoot, HashSet<SyntaxToken> booleanNodes)
         {
             int programId = 0;
             CompilationUnitSyntax modRoot = orgRoot;
             foreach (var booleanNode in booleanNodes)
             {
-                var booleanExchange = new ApplyBooleanExchange(booleanNode.ToString());
-                if (singlePlace)
-                {
-                    modRoot = Common.GetParseUnit(csFile);
-                }
+                var booleanExchange = new ApplyBooleanExchange(this, booleanNode.ToString());
+                modRoot = mCommon.GetParseUnit(csFile);
                 modRoot = (CompilationUnitSyntax)booleanExchange.Visit(modRoot);
-                if (singlePlace)
-                {
-                    programId++;
-                    Common.SaveTransformation(modRoot, csFile, Convert.ToString(programId));
-                }
-            }
-            if (!singlePlace)
-            {
-                Common.SaveTransformation(modRoot, csFile, Convert.ToString(0));
+                programId++;
+                mCommon.SaveTransformation(savePath, modRoot, csFile, Convert.ToString(programId));
             }
         }
 
-        public class LocateBooleans : CSharpSyntaxWalker
+        private class LocateBooleans : CSharpSyntaxWalker
         {
-            private HashSet<SyntaxToken> mBooleanNodes;
+            private readonly HashSet<SyntaxToken> mBooleanNodes;
 
             public HashSet<SyntaxToken> GetBooleanList()
             {
@@ -99,7 +91,7 @@ namespace CSharpTransformer.src
             }
         }
 
-        private static String GetNotExpStr(String nodeStr, String nodeRef)
+        private String GetNotExpStr(String nodeStr, String nodeRef)
         {
             if (nodeStr.Equals("true"))
             {
@@ -129,11 +121,14 @@ namespace CSharpTransformer.src
             }
         }
 
-        class IdentifierNotRewriter : CSharpSyntaxRewriter
+        private class IdentifierNotRewriter : CSharpSyntaxRewriter
         {
-            private String mBooleanNode;
-            public IdentifierNotRewriter(String booleanNode)
+            private readonly BooleanExchange mParent;
+            private readonly String mBooleanNode;
+
+            public IdentifierNotRewriter(BooleanExchange parentObj, String booleanNode)
             {
+                mParent = parentObj;
                 mBooleanNode = booleanNode;
             }
 
@@ -143,17 +138,20 @@ namespace CSharpTransformer.src
                     (node.IsKind(SyntaxKind.LogicalNotExpression) && node.ToString().Equals("!" + mBooleanNode))
                     || (node.IsKind(SyntaxKind.IdentifierName) && node.ToString().Equals(mBooleanNode))))
                 {
-                    return SyntaxFactory.ParseExpression(GetNotExpStr(node.ToString(), mBooleanNode));
+                    return SyntaxFactory.ParseExpression(mParent.GetNotExpStr(node.ToString(), mBooleanNode));
                 }
                 return base.Visit(node);
             }
         }
 
-        public class ApplyBooleanExchange : CSharpSyntaxRewriter
+        private class ApplyBooleanExchange : CSharpSyntaxRewriter
         {
-            private String mBooleanNode;
-            public ApplyBooleanExchange(String booleanNode)
+            private readonly BooleanExchange mParent;
+            private readonly String mBooleanNode;
+
+            public ApplyBooleanExchange(BooleanExchange parentObj, String booleanNode)
             {
+                mParent = parentObj;
                 mBooleanNode = booleanNode;
             }
 
@@ -227,13 +225,13 @@ namespace CSharpTransformer.src
                     if (node.IsKind(SyntaxKind.Argument))
                     {
                         //i.e. call(x) --> call(!x)
-                        var argumentListSyntax = SyntaxFactory.ParseArgumentList(GetNotExpStr(node.ToString(), mBooleanNode));
+                        var argumentListSyntax = SyntaxFactory.ParseArgumentList(mParent.GetNotExpStr(node.ToString(), mBooleanNode));
                         return argumentListSyntax.ChildNodes().First();
                     }
                     else
                     {
                         //i.e. y=x --> y=!x
-                        return SyntaxFactory.ParseExpression(GetNotExpStr(node.ToString(), mBooleanNode));
+                        return SyntaxFactory.ParseExpression(mParent.GetNotExpStr(node.ToString(), mBooleanNode));
                     }
                 }
                 else if (node != null && node.Parent != null
@@ -242,8 +240,8 @@ namespace CSharpTransformer.src
                     && ((AssignmentExpressionSyntax)node.Parent).Right.ToString().Equals(node.ToString()))
                 {
                     //i.e. x = call(!x,r(x)) --> x = !(call(!!x,r(!x)))
-                    node = new IdentifierNotRewriter(mBooleanNode).Visit(node);
-                    return SyntaxFactory.ParseExpression(GetNotExpStr(node.ToString(), mBooleanNode));
+                    node = new IdentifierNotRewriter(mParent, mBooleanNode).Visit(node);
+                    return SyntaxFactory.ParseExpression(mParent.GetNotExpStr(node.ToString(), mBooleanNode));
                 }
                 else if (node != null && node.Parent != null
                     && node.IsKind(SyntaxKind.EqualsValueClause)
@@ -254,7 +252,7 @@ namespace CSharpTransformer.src
                     //i.e. boolean y = x --> boolean y = !x
                     return ((EqualsValueClauseSyntax)node).Update(
                         ((EqualsValueClauseSyntax)node).EqualsToken,
-                        SyntaxFactory.ParseExpression(GetNotExpStr(((EqualsValueClauseSyntax)node).Value.ToString(), mBooleanNode)));
+                        SyntaxFactory.ParseExpression(mParent.GetNotExpStr(((EqualsValueClauseSyntax)node).Value.ToString(), mBooleanNode)));
                 }
                 return base.Visit(node);
             }

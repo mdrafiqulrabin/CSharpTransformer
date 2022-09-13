@@ -10,20 +10,23 @@ namespace CSharpTransformer.src
 {
     public class SwitchToIf
     {
+        private readonly Common mCommon;
+
         public SwitchToIf()
         {
             //Console.WriteLine("\n[ SwitchToIf ]\n");
+            mCommon = new Common();
         }
 
         public void InspectSourceCode(String csFile)
         {
-            Common.SetOutputPath(this, csFile);
-            CompilationUnitSyntax root = Common.GetParseUnit(csFile);
+            String savePath = Common.mRootOutputPath + this.GetType().Name + "/";
+            CompilationUnitSyntax root = mCommon.GetParseUnit(csFile);
             if (root != null)
             {
-                var switchNodes = root.DescendantNodes().OfType<SwitchStatementSyntax>().ToList();
+                var switchNodes = root.DescendantNodes().
+                    OfType<SwitchStatementSyntax>().ToList();
 
-                // apply to single place
                 int programId = 0;
                 for (int place = 0; place < switchNodes.Count; place++)
                 {
@@ -33,30 +36,13 @@ namespace CSharpTransformer.src
                     {
                         programId++;
                         var modRoot = root.ReplaceNode(switchNode, modSwitchNode);
-                        Common.SaveTransformation(modRoot, csFile, Convert.ToString(programId));
+                        mCommon.SaveTransformation(savePath, modRoot, csFile, Convert.ToString(programId));
                     }
-                }
-
-                // apply to all place
-                if (switchNodes.Count > 1)
-                {
-                    var remSwitchNodes = root.DescendantNodes().OfType<SwitchStatementSyntax>().ToList();
-                    for (int place = 0; place < switchNodes.Count; place++)
-                    {
-                        var switchNode = remSwitchNodes.ElementAt(0); //as switch type change
-                        var modSwitchNode = ApplySwitchToIf(switchNode);
-                        if (modSwitchNode != null)
-                        {
-                            root = root.ReplaceNode(switchNode, modSwitchNode);
-                            remSwitchNodes = root.DescendantNodes().OfType<SwitchStatementSyntax>().ToList();
-                        }
-                    }
-                    Common.SaveTransformation(root, csFile, Convert.ToString(0));
                 }
             }
         }
 
-        private static IfStatementSyntax ApplySwitchToIf(SwitchStatementSyntax node)
+        private IfStatementSyntax ApplySwitchToIf(SwitchStatementSyntax node)
         {
             List<IfStatementSyntax> allIfStatementSyntax = new List<IfStatementSyntax>();
             ElseClauseSyntax lastElseClauseSyntax = null;

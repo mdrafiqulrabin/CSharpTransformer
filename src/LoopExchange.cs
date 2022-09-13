@@ -8,47 +8,52 @@ namespace CSharpTransformer.src
 {
     public class LoopExchange
     {
+        private readonly Common mCommon;
+
         public LoopExchange()
         {
             //Console.WriteLine("\n[ LoopExchange ]\n");
+            mCommon = new Common();
         }
 
         public void InspectSourceCode(String csFile)
         {
-            Common.SetOutputPath(this, csFile);
-            CompilationUnitSyntax root = Common.GetParseUnit(csFile);
+            String savePath = Common.mRootOutputPath + this.GetType().Name + "/";
+            CompilationUnitSyntax root = mCommon.GetParseUnit(csFile);
             if (root != null)
             {
                 var loopNodes = root.DescendantNodes().Where(node =>
                         (node.IsKind(SyntaxKind.ForStatement)
                         || node.IsKind(SyntaxKind.WhileStatement))).ToList();
 
-                // apply to single place
                 int programId = 0;
                 for (int place = 0; place < loopNodes.Count; place++)
                 {
                     var loopNode = loopNodes.ElementAt(place);
-                    var modRoot = ReplaceLoopNode(root, loopNode);
-                    if (modRoot != null)
+                    var modLoopNode = ApplyLoopExchange(loopNode);
+                    if (modLoopNode != null)
                     {
                         programId++;
-                        Common.SaveTransformation(modRoot, csFile, Convert.ToString(programId));
+                        var modRoot = root.ReplaceNode(loopNode, modLoopNode);
+                        mCommon.SaveTransformation(savePath, modRoot, csFile, Convert.ToString(programId));
                     }
                 }
+            }
+        }
 
-                // apply to all place
-                if (loopNodes.Count > 1)
-                {
-                    for (int place = 0; place < loopNodes.Count; place++)
-                    {
-                        var loopNode = loopNodes.ElementAt(place);
-                        root = ReplaceLoopNode(root, loopNode);
-                        loopNodes = root.DescendantNodes().Where(node =>
-                            (node.IsKind(SyntaxKind.ForStatement)
-                            || node.IsKind(SyntaxKind.WhileStatement))).ToList();
-                    }
-                    Common.SaveTransformation(root, csFile, Convert.ToString(0));
-                }
+        private SyntaxNode ApplyLoopExchange(SyntaxNode loopNode)
+        {
+            if (loopNode.IsKind(SyntaxKind.ForStatement))
+            {
+                return ForToWhile((ForStatementSyntax)loopNode);
+            }
+            else if (loopNode.IsKind(SyntaxKind.WhileStatement))
+            {
+                return WhileToFor((WhileStatementSyntax)loopNode);
+            }
+            else
+            {
+                return null;
             }
         }
 
@@ -68,7 +73,7 @@ namespace CSharpTransformer.src
             }
         }
 
-        private static SyntaxNode ForToWhile(ForStatementSyntax node)
+        private SyntaxNode ForToWhile(ForStatementSyntax node)
         {
             ExpressionSyntax condition = node.Condition;
             if (condition == null)
@@ -105,7 +110,6 @@ namespace CSharpTransformer.src
             {
                 whileLoop = SyntaxFactory.WhileStatement(condition, SyntaxFactory.EmptyStatement());
             }
-
             var outerStatements = new SyntaxList<StatementSyntax>();
             VariableDeclarationSyntax declaration = node.Declaration;
             if (declaration != null)
@@ -127,7 +131,7 @@ namespace CSharpTransformer.src
             }
         }
 
-        private static SyntaxNode WhileToFor(WhileStatementSyntax node)
+        private SyntaxNode WhileToFor(WhileStatementSyntax node)
         {
             SeparatedSyntaxList<ExpressionSyntax> initializers = new SeparatedSyntaxList<ExpressionSyntax>();
             ExpressionSyntax condition = node.Condition;

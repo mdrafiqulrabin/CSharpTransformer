@@ -8,65 +8,56 @@ namespace CSharpTransformer.src
 {
     public class VariableRenaming
     {
+        private readonly Common mCommon;
+
         public VariableRenaming()
         {
             //Console.WriteLine("\n[ VariableRenaming ]\n");
+            mCommon = new Common();
         }
 
         public void InspectSourceCode(String csFile)
         {
-            Common.SetOutputPath(this, csFile);
-            CompilationUnitSyntax root = Common.GetParseUnit(csFile);
+            String savePath = Common.mRootOutputPath + this.GetType().Name + "/";
+            CompilationUnitSyntax root = mCommon.GetParseUnit(csFile);
             if (root != null)
             {
                 var variableNames = root.DescendantNodes().OfType<ParameterSyntax>().Select(p => p.Identifier.Text)
                     .Concat(root.DescendantNodes().OfType<VariableDeclaratorSyntax>().Select(v => v.Identifier.Text))
                     .ToArray();
-                if (variableNames.Count() > 1)
+                if (variableNames.Count() > 0)
                 {
-                    ApplyToPlace(csFile, root, variableNames, false);
+                    String newVariablename = @"var";
+                    int variableId = 0;
+                    while (variableNames.Contains(newVariablename))
+                    {
+                        variableId++;
+                        newVariablename = @"var" + variableId;
+                    }
+                    ApplyToPlace(savePath, csFile, root, variableNames, newVariablename);
                 }
-                ApplyToPlace(csFile, root, variableNames, true);
             }
         }
 
-        public void ApplyToPlace(String csFile, CompilationUnitSyntax orgRoot,
-            string[] variableNames, bool singlePlace)
+        private void ApplyToPlace(String savePath, String csFile,
+            CompilationUnitSyntax orgRoot, string[] variableNames,
+            String newVariablename)
         {
-            int variableId = 0, programId = 0;
-            while (variableNames.Contains(@"var" + variableId))
-            {
-                variableId++;
-            }
+            int programId = 0;
             CompilationUnitSyntax modRoot = orgRoot;
             foreach (var oldVariablename in variableNames)
             {
-                String newVariablename = @"var" + variableId;
                 var variableRenaming = new ApplyVariableRenaming(oldVariablename, newVariablename);
-                if (singlePlace)
-                {
-                    modRoot = Common.GetParseUnit(csFile);
-                }
+                modRoot = mCommon.GetParseUnit(csFile);
                 modRoot = (CompilationUnitSyntax)variableRenaming.Visit(modRoot);
                 programId++;
-                if (singlePlace)
-                {
-                    Common.SaveTransformation(modRoot, csFile, Convert.ToString(programId));
-                }
-                else
-                {
-                    variableId++;
-                }
-            }
-            if (!singlePlace)
-            {
-                Common.SaveTransformation(modRoot, csFile, Convert.ToString(0));
+                mCommon.SaveTransformation(savePath, modRoot, csFile, Convert.ToString(programId));
             }
         }
 
-        public class ApplyVariableRenaming : CSharpSyntaxRewriter
+        private class ApplyVariableRenaming : CSharpSyntaxRewriter
         {
-            private String mNewVariableName, mOldVariableName;
+            private readonly string mNewVariableName, mOldVariableName;
             public ApplyVariableRenaming(String oldVariableName, String newVariableName)
             {
                 mNewVariableName = newVariableName;

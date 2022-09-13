@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -8,44 +9,45 @@ namespace CSharpTransformer.src
 {
     public class LogStatement
     {
+        private readonly Common mCommon;
+
         public LogStatement()
         {
             //Console.WriteLine("\n[ LogStatement ]\n");
+            mCommon = new Common();
         }
 
         public void InspectSourceCode(String csFile)
         {
-            Common.SetOutputPath(this, csFile);
-            CompilationUnitSyntax root = Common.GetParseUnit(csFile);
+            String savePath = Common.mRootOutputPath + this.GetType().Name + "/";
+            CompilationUnitSyntax root = mCommon.GetParseUnit(csFile);
             if (root != null)
             {
                 root = ApplyTransformation(root);
-                Common.SaveTransformation(root, csFile, Convert.ToString(1));
+                mCommon.SaveTransformation(savePath, root, csFile, Convert.ToString(1));
             }
         }
 
         private CompilationUnitSyntax ApplyTransformation(CompilationUnitSyntax root)
         {
-            MethodDeclarationSyntax methodSyntax = root.DescendantNodes().OfType<MethodDeclarationSyntax>().ToList().First();
-            if (methodSyntax != null)
+            if (root.Members.Any())
             {
-                BlockSyntax mbody = ((MethodDeclarationSyntax)methodSyntax).Body;
-                if (mbody != null && mbody.Statements.Count > 0)
+                MemberDeclarationSyntax methodSyntax = (MemberDeclarationSyntax)root.Members.First();
+                var stmtNodes = methodSyntax.DescendantNodes().OfType<StatementSyntax>()
+                    .Where(node => !node.IsKind(SyntaxKind.Block)).ToList();
+                if (stmtNodes.Count > 0)
                 {
-                    SyntaxList<StatementSyntax> mstmt = mbody.Statements;
-                    if (mstmt.ElementAt(0).ToString().Contains("Console.WriteLine")) return root;
-                    StatementSyntax logStr = (StatementSyntax)GetLogStatement();
-                    mstmt = mstmt.Insert(0, logStr); //beginning of stmt
-                    mbody = mbody.WithStatements(mstmt);
-                    return root.ReplaceNode(methodSyntax, methodSyntax.WithBody(mbody));
+                    int place = new Random().Next(1, stmtNodes.Count);
+                    StatementSyntax logStr = GetLogStatement(stmtNodes.ElementAt(place));
+                    root = root.ReplaceNode(stmtNodes.ElementAt(place), logStr);
                 }
             }
             return root;
         }
 
-        private StatementSyntax GetLogStatement()
+        private StatementSyntax GetLogStatement(StatementSyntax stmt)
         {
-            String logStr = "Console.WriteLine(\"Executing method:\");\n";
+            String logStr = "Console.WriteLine(\"log\");\n" + stmt + "\n";
             return SyntaxFactory.ParseStatement(logStr);
         }
     }
