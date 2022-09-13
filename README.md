@@ -2,11 +2,12 @@
 A tool to apply program transformations on CSharp **(\*.cs)** methods for generating semantic adversarial input programs.
 - - -
 
-# Version:
+# Version(s):
 - TargetFrameworkVersion v4.7
 - ToolsVersion 4.0
+- Microsoft.CodeAnalysis 4.3.0
+- Microsoft.CodeAnalysis.Analyzers 3.3.3
 - Microsoft.Net.Compilers 3.1.1
-- Microsoft.CodeAnalysis 3.1.0
 
 # CSharpTransformer.csproj:
 
