@@ -1,13 +1,10 @@
 # CSharpTransformer
-A tool to apply program transformations on CSharp **(\*.cs)** methods for generating semantic adversarial input programs.
+A tool to apply program transformations on CSharp **(\*.cs)** methods for generating semantic-preserving transformed programs.
 - - -
 
-# Version(s):
+# Used Version(s):
 - TargetFrameworkVersion v4.7
-- ToolsVersion 4.0
 - Microsoft.CodeAnalysis 4.3.0
-- Microsoft.CodeAnalysis.Analyzers 3.3.3
-- Microsoft.Net.Compilers 3.1.1
 
 # CSharpTransformer.csproj:
 
